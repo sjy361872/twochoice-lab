@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>니부이치 계산 방법</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<meta name="description" content="니부이치 계산기가 잔고마다 어떤 판을 추천하는지, 그림으로 쉽게 풀어 쓴 설명" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+<style>
+  :root {
+    --red: #e3350d; --red-ink: #c12b08; --red-soft: #fff1ec;
+    --win: #1e9c5f; --win-soft: #e6f6ee;
+    --edge: #1a1a1a; --shadow: #1a1a1a;
+    --bg: #f7f4ee; --card: #ffffff; --s2: #f1ede4; --s3: #e4ded2;
+    --ink: #1a1a1a; --ink2: #4f515a; --ink3: #6c6f7b;
+    --bar0: #d9d3c6; --tagA: #3c3a35;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --red-ink: #ff7a5c; --red-soft: #3a1f17;
+      --win: #3cc47c; --win-soft: #173326;
+      --edge: #6a6357; --shadow: #000000;
+      --bg: #161411; --card: #23201b; --s2: #2e2a24; --s3: #3a352d;
+      --ink: #f3efe7; --ink2: #c9c3b7; --ink3: #a39d91;
+      --bar0: #4a4439; --tagA: #57534b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --red-ink: #ff7a5c; --red-soft: #3a1f17;
+    --win: #3cc47c; --win-soft: #173326;
+    --edge: #6a6357; --shadow: #000000;
+    --bg: #161411; --card: #23201b; --s2: #2e2a24; --s3: #3a352d;
+    --ink: #f3efe7; --ink2: #c9c3b7; --ink3: #a39d91;
+    --bar0: #4a4439; --tagA: #57534b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { font-family: "Pretendard Variable", Pretendard, system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.5; font-size: 15px; word-break: keep-all; overflow-wrap: break-word; }
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  b { font-weight: 800; }
+  .red { color: var(--red-ink); } .grn { color: var(--win); } .mut { color: var(--ink3); }
+
+  /* 머리 */
+  .top { background: #e3350d; color: #fff; border-bottom: 4px solid #1a1a1a; }
+  .top .in { max-width: 760px; margin: 0 auto; padding: 16px 16px 14px; display: flex; gap: 12px; align-items: center; }
+  .top h1 { font-size: 20px; line-height: 1.3; font-weight: 900; }
+  .top p { font-size: 13px; opacity: .92; }
+  .top svg { flex-shrink: 0; }
+
+  main { max-width: 760px; margin: 0 auto; padding: 14px 16px 40px; display: grid; gap: 14px; }
+  .card { background: var(--card); border: 2.5px solid var(--edge); box-shadow: 0 4px 0 var(--shadow); border-radius: 24px; padding: 14px 14px; min-width: 0; }
+  @media (min-width: 640px) { .card { padding: 20px 24px; } }
+  .ttl { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 16.5px; margin-bottom: 10px; }
+  .ttl i { font-style: normal; flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12.5px; background: var(--red); color: #fff; border: 2px solid var(--edge); }
+  .ttl small { font-size: 13px; font-weight: 700; color: var(--ink3); margin-left: auto; }
+  .cap { font-size: 14px; color: var(--ink2); margin-top: 10px; }
+  .pill { display: inline-block; border: 2px solid var(--edge); border-radius: 999px; padding: 0 9px; font-size: 12.5px; font-weight: 800; white-space: nowrap; }
+  .pill.on { background: var(--red); color: #fff; }
+
+  /* 3단계 흐름 */
+  .steps { display: grid; gap: 8px; }
+  @media (min-width: 640px) { .steps { grid-template-columns: 1fr 1fr 1fr; gap: 10px; } }
+  .st { display: flex; gap: 10px; align-items: center; border: 2px solid var(--edge); border-radius: 16px; padding: 9px 11px; position: relative; }
+  @media (min-width: 640px) { .st { flex-direction: column; text-align: center; padding: 14px 10px; } }
+  .st .ic { flex-shrink: 0; width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; border: 2px solid var(--edge); background: var(--s2); }
+  .st.hot .ic { background: var(--red); }
+  .st .n { font-size: 12.5px; font-weight: 900; color: var(--red-ink); }
+  .st .h { font-weight: 900; font-size: 15px; line-height: 1.3; }
+  .st .d { font-size: 13px; color: var(--ink2); line-height: 1.4; margin-top: 1px; }
+
+  /* 판 카드 (큰 숫자) */
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pk { border: 2px solid var(--edge); border-radius: 16px; padding: 10px 10px 9px; position: relative; min-width: 0; }
+  .pk.best { border: 3px solid var(--red); background: var(--red-soft); }
+  .pk .crown { position: absolute; top: -11px; right: 10px; }
+  .pk .hd { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 14px; }
+  .tag { width: 24px; height: 22px; border-radius: 7px; display: inline-grid; place-items: center; font-weight: 900; font-size: 12.5px; color: #fff; flex-shrink: 0; }
+  .tag.A { background: var(--tagA); } .tag.B { background: #e3350d; } .tag.N { background: var(--s3); color: var(--ink3); }
+  .pk .pc { font-size: 34px; font-weight: 900; line-height: 1.1; margin: 6px 0 6px; }
+  .pk.best .pc { color: var(--red-ink); }
+  .br { display: grid; gap: 3px; }
+  .br div { display: flex; justify-content: space-between; gap: 4px; border-radius: 8px; padding: 2px 7px; font-size: 12.5px; font-weight: 700; }
+  .br .w { background: var(--win-soft); color: var(--win); }
+  .br .l { background: var(--red-soft); color: var(--red-ink); }
+  .pk.best .br .l { background: var(--card); }
+  .concl { margin-top: 10px; display: flex; gap: 8px; align-items: center; background: var(--s2); border-radius: 12px; padding: 8px 10px; font-weight: 800; font-size: 14px; line-height: 1.4; }
+
+  /* 근거 배지 */
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .trust { display: flex; gap: 9px; align-items: flex-start; font-size: 14.5px; font-weight: 700; line-height: 1.45; }
+  .trust .ck, .chk .ck { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--win); border: 2px solid var(--edge); display: grid; place-items: center; margin-top: 1px; }
+  .trust .ex { display: inline-block; margin-top: 5px; background: var(--win-soft); border-radius: 8px; padding: 1px 8px; font-size: 13px; font-weight: 700; color: var(--ink2); }
+  .chk { display: grid; gap: 6px; }
+  .chk div { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 700; }
+  .chk .ck { margin-top: 0; }
+  .cmps { display: grid; gap: 7px; }
+  .cmp { display: grid; gap: 3px; }
+  .cmp .nm { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; font-size: 14px; }
+  .cmp .nm span { font-size: 12.5px; color: var(--ink3); font-weight: 600; }
+  .cmp .trk { position: relative; height: 22px; border: 1.5px solid var(--edge); border-radius: 7px; background: var(--s2); overflow: hidden; }
+  .cmp .fl { height: 100%; background: var(--bar0); }
+  .cmp.best .fl { background: #e3350d; }
+  .cmp .pv { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); font-size: 13px; font-weight: 900; }
+  .cmp.best .nm b, .cmp.best .pv { color: var(--red-ink); }
+  .cmp .pv small { font-size: 11.5px; font-weight: 700; }
+  .cap2 { font-size: 12.5px; color: var(--ink3); margin-top: 4px; }
+  .ctbs { display: grid; gap: 10px; }
+  .ctb td small { white-space: nowrap; }
+  .ctb { max-width: 520px; }
+  .ctb table { table-layout: fixed; }
+  .ctb th:nth-child(2) { width: 76px; } .ctb th:nth-child(3) { width: 82px; }
+  .ctb .ch { font-weight: 900; font-size: 14px; margin-bottom: 4px; }
+  .ctb table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .ctb th { font-size: 12px; color: var(--ink3); text-align: left; font-weight: 700; padding: 2px 4px; border-bottom: 2px solid var(--edge); }
+  .ctb td { padding: 4px 4px; border-bottom: 1px solid var(--s3); vertical-align: top; }
+  .ctb td small { display: block; font-size: 11.5px; color: var(--ink3); font-weight: 600; }
+  .ctb .r { text-align: right; white-space: nowrap; }
+  .ctb tr.best td { background: var(--red-soft); }
+  .ctb tr.best b { color: var(--red-ink); }
+  .bdg { display: inline-flex; align-items: center; gap: 5px; border: 2px solid var(--edge); border-radius: 999px; padding: 3px 10px 3px 4px; font-size: 13px; font-weight: 800; background: var(--win-soft); }
+  .bdg .ck { width: 18px; height: 18px; border-radius: 50%; background: var(--win); display: grid; place-items: center; }
+  .limit { margin-top: 10px; display: flex; gap: 7px; align-items: flex-start; font-size: 13.5px; font-weight: 700; color: var(--ink2); }
+  .limit svg { flex-shrink: 0; margin-top: 2px; }
+
+  /* 자세히 보기 */
+  details.more > summary { list-style: none; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; background: var(--card); border: 2.5px solid var(--edge); box-shadow: 0 4px 0 var(--shadow); border-radius: 999px; padding: 11px 16px; font-weight: 900; font-size: 15.5px; }
+  details.more > summary::-webkit-details-marker { display: none; }
+  details.more > summary .arw { display: inline-block; transition: transform .2s; color: var(--red-ink); }
+  details.more[open] > summary .arw { transform: rotate(180deg); }
+  details.more > summary:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+  .moreBody { display: grid; gap: 14px; margin-top: 16px; }
+
+  .formula { border: 2px dashed var(--edge); border-radius: 14px; padding: 9px 10px; background: var(--s2); font-weight: 800; font-size: 14px; line-height: 1.9; text-align: center; }
+  .formula .hl { border-radius: 7px; padding: 1px 6px; white-space: nowrap; }
+  .formula .hw { background: var(--win-soft); color: var(--win); }
+  .formula .hlz { background: var(--red-soft); color: var(--red-ink); }
+
+  /* 반복 막대 */
+  .snaps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (min-width: 640px) { .snaps { grid-template-columns: repeat(4, 1fr); } }
+  .snap { border: 2px solid var(--edge); border-radius: 14px; padding: 8px 8px 7px; min-width: 0; }
+  .snap .hd { font-weight: 900; font-size: 13.5px; }
+  .chart { position: relative; height: 70px; margin-top: 6px; border-bottom: 2px solid var(--edge); display: grid; grid-template-columns: repeat(16, 1fr); gap: 1.5px; align-items: end; }
+  .chart .bar { background: var(--bar0); border-radius: 3px 3px 0 0; }
+  .chart .bar.new { background: var(--red); }
+  .chart .bar.goal { background: var(--win); }
+  .snap .rd { font-size: 12.5px; font-weight: 700; color: var(--ink2); margin-top: 4px; }
+  .snap .rd b { color: var(--ink); }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12.5px; font-weight: 700; color: var(--ink2); margin-bottom: 8px; }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+
+  /* 완성 표 */
+  .tbl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  @media (min-width: 640px) { .tbl { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+  .cell { border: 2px solid var(--edge); border-radius: 11px; padding: 4px 4px 5px; display: grid; justify-items: center; gap: 2px; text-align: center; min-width: 0; }
+  .cell .bal { font-weight: 800; font-size: 13.5px; }
+  .cell .bal small { font-size: 11.5px; color: var(--ink3); font-weight: 700; }
+  .cell .row2 { display: flex; align-items: center; gap: 5px; }
+  .cell .p { font-weight: 900; font-size: 13.5px; }
+  .cell.dim { opacity: .6; }
+  .cell.hit { border: 3px solid var(--red); background: var(--red-soft); }
+  .cell.from { border-style: dashed; }
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 10px; }
+  .flow .n { border: 2px solid var(--edge); border-radius: 11px; padding: 3px 9px; font-weight: 800; font-size: 13px; }
+  .flow .n.l { background: #e3350d; color: #fff; }
+  .flow .n.hit { background: var(--red-soft); border: 3px solid var(--red); }
+  .flow .ar { font-weight: 900; color: var(--ink3); }
+
+  /* 깎임 막대 */
+  .shrink { display: grid; gap: 5px; }
+  .sh { display: grid; grid-template-columns: 46px 1fr; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 800; }
+  .sh .track { height: 22px; background: var(--s2); border-radius: 7px; border: 1.5px solid var(--edge); overflow: hidden; }
+  .sh .fill { height: 100%; background: var(--win); color: #fff; display: flex; align-items: center; justify-content: flex-end; padding-right: 7px; font-size: 12.5px; font-weight: 900; white-space: nowrap; }
+  .sh .fill.mid { background: #b97f12; } .sh .fill.low { background: #e3350d; }
+
+  /* 장치 */
+  .gad { display: grid; gap: 8px; }
+  @media (min-width: 640px) { .gad { grid-template-columns: 1fr 1fr; } }
+  .gc { border: 2px solid var(--edge); border-radius: 14px; padding: 9px 11px; min-width: 0; }
+  .gc .h { font-weight: 900; font-size: 14.5px; }
+  .gc .d { font-size: 13px; color: var(--ink2); margin-top: 2px; }
+  .gc .vis { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .mini { display: inline-flex; align-items: center; gap: 6px; border: 2px solid var(--edge); border-radius: 10px; padding: 2px 8px; font-weight: 800; font-size: 13px; }
+  .mini.ok { border-color: var(--win); background: var(--win-soft); }
+  .mini.x { opacity: .75; }
+  .mini.x .v { text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: var(--red); }
+  .mini.top1 { border-color: var(--red); background: var(--red-soft); }
+  footer { text-align: center; font-size: 12.5px; color: var(--ink3); padding: 0 16px 32px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="in">
+    <svg width="42" height="42" viewBox="0 0 64 64" aria-hidden="true"><defs><clipPath id="hc"><circle cx="32" cy="32" r="27"/></clipPath></defs><g clip-path="url(#hc)"><rect width="64" height="64" fill="#fff"/><path d="M0 0H64L0 64Z" fill="#e3350d"/></g><path d="M51 13L13 51" stroke="#1a1a1a" stroke-width="6" stroke-linecap="round"/><circle cx="32" cy="32" r="27" fill="none" stroke="#1a1a1a" stroke-width="5"/><text x="22" y="30" text-anchor="middle" font-size="17" font-weight="900" fill="#fff" font-family="system-ui, sans-serif">1</text><text x="42" y="50" text-anchor="middle" font-size="17" font-weight="900" fill="#1a1a1a" font-family="system-ui, sans-serif">2</text></svg>
+    <div><h1>계산기는 이렇게 추천해</h1><p>잔고마다 성공 확률 1등 판을 미리 골라 둬</p></div>
+  </div>
+</header>
+
+<main>
+
+<!-- 3단계 -->
+<section class="card" aria-label="추천 방법 3단계">
+  <div class="steps">
+    <div class="st"><span class="ic"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M13 4v6M13 10L5 17M13 10l8 7" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="5" cy="20" r="3" fill="#1e9c5f"/><circle cx="21" cy="20" r="3" fill="#e3350d"/></svg></span>
+      <div><div class="n">1단계</div><div class="h">판마다 점수 매기기</div><div class="d">이기면 갈 곳, 지면 갈 곳의 성공 확률을 평균 내</div></div></div>
+    <div class="st hot"><span class="ic"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M4 9l4.5 4L13 6l4.5 7L22 9l-2 11H6z" fill="#fff" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/></svg></span>
+      <div><div class="n">2단계</div><div class="h">점수 1등 판 추천</div><div class="d">목표에 닿을 확률이 가장 높은 판</div></div></div>
+    <div class="st"><span class="ic"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M14 3L6 15h6l-1 8 8-12h-6z" fill="#e3350d" stroke="var(--ink)" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+      <div><div class="n">3단계</div><div class="h">이겼다/졌다 → 바로 다음 판</div><div class="d">모든 잔고를 미리 계산해 둬서 즉시</div></div></div>
+  </div>
+</section>
+
+<!-- 예제 -->
+<section class="card">
+  <div class="ttl"><i>예</i>잔고 200, 목표 300이면?</div>
+  <div class="pair num">
+    <div class="pk best"><span class="crown pill on">추천</span>
+      <div class="hd"><span class="tag B">B</span>200 → 360</div>
+      <div class="pc">50%</div>
+      <div class="br"><div class="w"><span>이기면 360</span><span>도착!</span></div><div class="l"><span>지면 0</span><span>끝</span></div></div></div>
+    <div class="pk">
+      <div class="hd"><span class="tag A">A</span>100 → 180</div>
+      <div class="pc">41.6%</div>
+      <div class="br"><div class="w"><span>이기면 280</span><span>66.6%</span></div><div class="l"><span>지면 100</span><span>16.6%</span></div></div></div>
+  </div>
+  <div class="concl"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" style="flex-shrink:0"><circle cx="10" cy="10" r="8.5" fill="#e3350d" stroke="#1a1a1a" stroke-width="1.5"/><path d="M10 5v6M10 14v.5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>판을 적게 누를수록 유리해서 과감한 판이 이길 때가 많아</div>
+</section>
+
+<!-- 비교 -->
+<section class="card">
+  <div class="ttl">다른 방법이랑 비교하면?<small class="num">10,000 → 12,000</small></div>
+  <div class="cmps num">
+    <div class="cmp best"><div class="nm"><b>계산기 추천</b><span>매번 성공 확률 1등 판</span></div>
+      <div class="trk"><div class="fl" style="width:75.1%"></div><span class="pv">75.1%</span></div></div>
+    <div class="cmp"><div class="nm"><b>달랑베르</b><span>지면 한 칸 큰 판, 이기면 한 칸 작은 판</span></div>
+      <div class="trk"><div class="fl" style="width:69.5%"></div><span class="pv">69.5%</span></div></div>
+    <div class="cmp"><div class="nm"><b>마틴게일</b><span>지면 잃은 만큼 되찾게 판 키우기</span></div>
+      <div class="trk"><div class="fl" style="width:69.3%"></div><span class="pv">69.3%<small> ±0.2</small></span></div></div>
+    <div class="cmp"><div class="nm"><b>파롤리</b><span>이기면 한 칸 키우고, 지면 처음 판으로</span></div>
+      <div class="trk"><div class="fl" style="width:67.8%"></div><span class="pv">67.8%</span></div></div>
+    <div class="cmp"><div class="nm"><b>같은 판만 계속</b><span>한 판만 계속 누르기</span></div>
+      <div class="trk"><div class="fl" style="width:66.7%"></div><span class="pv">66.7%</span></div></div>
+  </div>
+  <p class="cap">다른 방법은 각자 가장 유리한 시작 판으로 계산했어. 그래도 계산기가 제일 높아.</p>
+  <p class="cap2">계산기는 '목표에 닿을 확률'이 기준이야 (평균 손익 기준이면 순위가 다를 수 있어).</p>
+</section>
+
+<!-- 근거 -->
+<section class="card">
+  <div class="ttl">믿어도 되는 이유</div>
+  <div class="trust"><span class="ck"><svg width="11" height="11" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div>추천대로 컴퓨터로 <b>20만 번</b> 해 봤더니, 계산기가 말한 확률 그대로 나왔어.
+    <div class="ex num">예) 계산 <b>50%</b> → 실험 <b>49.9%</b></div></div></div>
+  <div class="limit"><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2l9 16H1z" fill="#e3350d" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 8v4" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="15" r="1.2" fill="#fff"/></svg><span>표기 확률이 사실이라는 가정 · 평균적으론 잃는 게임</span></div>
+</section>
+
+<!-- 자세히 -->
+<details class="more" id="more">
+  <summary>자세히 보기 <span class="arw">▼</span></summary>
+  <div class="moreBody">
+
+    <section class="card">
+      <div class="ttl"><i>1</i>판 점수 공식</div>
+      <div class="formula">점수 = <span class="hl hw">이길 확률 × 이긴 뒤 성공 확률</span> + <span class="hl hlz">질 확률 × 진 뒤 성공 확률</span></div>
+      <p class="cap">예) A판, 잔고 200: ½×66.6% + ½×16.6% = <b>41.6%</b></p>
+    </section>
+
+    <section class="card">
+      <div class="ttl"><i>2</i>잔고 260이면 반대</div>
+      <div class="pair num">
+        <div class="pk best"><span class="crown pill on">추천</span>
+          <div class="hd"><span class="tag A">A</span>100 → 180</div>
+          <div class="pc">66.4%</div>
+          <div class="br"><div class="w"><span>이기면 340</span><span>도착!</span></div><div class="l"><span>지면 160</span><span>32.8%</span></div></div></div>
+        <div class="pk">
+          <div class="hd"><span class="tag B">B</span>200 → 360</div>
+          <div class="pc">50%</div>
+          <div class="br"><div class="w"><span>이기면 420</span><span>도착!</span></div><div class="l"><span>지면 60</span><span>끝</span></div></div></div>
+      </div>
+      <p class="cap">B는 지면 판을 못 눌러. <b>같은 게임도 잔고 따라 답이 달라.</b></p>
+    </section>
+
+    <section class="card">
+      <div class="ttl"><i>3</i>반복해서 채워</div>
+      <div class="legend"><span><i style="background:var(--bar0)"></i>잔고별 확률</span><span><i style="background:var(--red)"></i>방금 오른 칸</span><span><i style="background:var(--win)"></i>목표 300</span></div>
+      <div class="snaps num" id="snaps"></div>
+      <p class="cap">전부 0%에서 시작해 공식으로 계속 고쳐 써. 값이 오르기만 하니까 <b>"최소 ○%"</b>라고 말할 수 있어.</p>
+    </section>
+
+    <section class="card">
+      <div class="ttl"><i>4</i>완성된 표</div>
+      <div class="tbl num" id="tbl"></div>
+      <div class="flow num"><span class="n">220</span><span class="ar">→</span><span class="n l">A판 짐</span><span class="ar">→</span><span class="n hit">120 칸: A · 25%</span><span class="mut" style="font-size:12.5px;font-weight:700">칸 찾기 약 0.02ms</span></div>
+    </section>
+
+    <section class="card">
+      <div class="ttl"><i>5</i>왜 과감한 판?</div>
+      <div class="shrink num" role="img" aria-label="100pt가 판마다 평균 90%로 줄어드는 막대">
+        <div class="sh"><span>시작</span><div class="track"><div class="fill" style="width:100%">100</div></div></div>
+        <div class="sh"><span>1판</span><div class="track"><div class="fill" style="width:90%">90</div></div></div>
+        <div class="sh"><span>2판</span><div class="track"><div class="fill mid" style="width:81%">81</div></div></div>
+        <div class="sh"><span>3판</span><div class="track"><div class="fill mid" style="width:72.9%">72.9</div></div></div>
+        <div class="sh"><span>5판</span><div class="track"><div class="fill low" style="width:59%">59</div></div></div>
+      </div>
+      <p class="cap">판마다 평균 약 10% 손해(환원율 90%). 누를수록 깎여.</p>
+    </section>
+
+    <section class="card">
+      <div class="ttl"><i>6</i>덧붙인 장치</div>
+      <div class="gad num">
+        <div class="gc"><div class="h">손해만 보는 판 빼기</div>
+          <div class="vis"><span class="mini ok">300 → 540</span><span class="mini x"><span class="v">300 → 480</span></span></div></div>
+        <div class="gc"><div class="h">큰 금액은 불리하게 반올림</div><div class="d">거는 돈 ↑ · 받는 돈 ↓ → 최소 보장</div></div>
+        <div class="gc"><div class="h">사실상 같음 (0.1%p 이내)</div>
+          <div class="vis"><span class="mini top1">99→160 70.95%</span><span class="mini">100→180 70.93%</span></div></div>
+        <div class="gc"><div class="h">지금 판 그대로 OK</div><div class="d">방금 판이 1등이거나 사실상 같으면 안 바꿔도 돼</div></div>
+      </div>
+      <p class="cap">배당은 "○○pt 이상"의 최소값으로 계산해.</p>
+    </section>
+
+    <section class="card">
+      <div class="ttl"><i>7</i>다른 확인도 했어</div>
+      <div class="chk">
+        <div><span class="ck"><svg width="11" height="11" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>손으로 푼 작은 문제와 같은 답</div>
+        <div><span class="ck"><svg width="11" height="11" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>판이 하나일 때 수학책 공식과 같은 답</div>
+        <div><span class="ck"><svg width="11" height="11" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>다른 코드로 다시 계산해도 같은 답</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="ttl"><i>8</i>방법 비교 (자세히)</div>
+      <div class="ctbs">
+      <div class="ctb"><div class="ch num">10,000 → 11,000</div>
+      <table class="num"><thead><tr><th>방법</th><th class="r">성공</th><th class="r">평균 손익</th></tr></thead><tbody>
+      <tr class="best"><td><b>계산기 추천</b><small>판마다 다시 고름</small></td><td class="r"><b>84.7%</b></td><td class="r">−661</td></tr><tr><td><b>마틴게일</b><small>시작 500→900</small></td><td class="r"><b>81.6%*</b></td><td class="r">−744*</td></tr><tr><td><b>달랑베르</b><small>시작 2000→3600</small></td><td class="r"><b>80.9%</b></td><td class="r">−633</td></tr><tr><td><b>같은 판만 계속</b><small>시작 2000→3600</small></td><td class="r"><b>75.5%</b></td><td class="r">−1,015</td></tr><tr><td><b>파롤리</b><small>시작 2000→3600</small></td><td class="r"><b>71.7%</b></td><td class="r">−854</td></tr>
+      </tbody></table></div>
+      <div class="ctb"><div class="ch num">10,000 → 12,000</div>
+      <table class="num"><thead><tr><th>방법</th><th class="r">성공</th><th class="r">평균 손익</th></tr></thead><tbody>
+      <tr class="best"><td><b>계산기 추천</b><small>판마다 다시 고름</small></td><td class="r"><b>75.1%</b></td><td class="r">−967</td></tr><tr><td><b>달랑베르</b><small>시작 1000→1800</small></td><td class="r"><b>69.5%</b></td><td class="r">−1,261</td></tr><tr><td><b>마틴게일</b><small>시작 500→900</small></td><td class="r"><b>69.3%*</b></td><td class="r">−1,248*</td></tr><tr><td><b>파롤리</b><small>시작 3000→5400</small></td><td class="r"><b>67.8%</b></td><td class="r">−1,155</td></tr><tr><td><b>같은 판만 계속</b><small>시작 3000→5400</small></td><td class="r"><b>66.7%</b></td><td class="r">−1,040</td></tr>
+      </tbody></table></div>
+      <div class="ctb"><div class="ch num">10,000 → 20,000</div>
+      <table class="num"><thead><tr><th>방법</th><th class="r">성공</th><th class="r">평균 손익</th></tr></thead><tbody>
+      <tr class="best"><td><b>계산기 추천</b><small>판마다 다시 고름</small></td><td class="r"><b>39.5%</b></td><td class="r">−2,061</td></tr><tr><td><b>마틴게일</b><small>시작 2000→3600</small></td><td class="r"><b>34.0%*</b></td><td class="r">−2,312*</td></tr><tr><td><b>달랑베르</b><small>시작 7777→14000</small></td><td class="r"><b>31.2%</b></td><td class="r">−1,457</td></tr><tr><td><b>같은 판만 계속</b><small>시작 7777→14000</small></td><td class="r"><b>31.2%</b></td><td class="r">−1,457</td></tr><tr><td><b>파롤리</b><small>시작 2000→3600</small></td><td class="r"><b>30.6%</b></td><td class="r">−2,704</td></tr>
+      </tbody></table></div>
+      </div>
+      <p class="cap">* 마틴게일은 20만 번 가상 플레이 값이라 ±0.2%p 정도 오차가 있어. 나머지는 정확 계산.</p>
+      <p class="cap">참고: 가장 싼 판(99→160)에서 시작하면 파롤리는 16.1%까지 떨어져 (→12,000).</p>
+    </section>
+
+  </div>
+</details>
+
+</main>
+
+<script>
+(function () {
+  // 반복 스냅샷 (make_numbers.py 직접 가치 반복 결과, 단위 %, 잔고 0~280)
+  var BAL = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280];
+  var H = {
+    0: [0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0],
+    1: [0,0,0,0,0, 0,0,0,0,0, 50,50,50,50,50],
+    2: [0,0,0,0,0, 0,25,25,25,25, 50,50,50,50,50],
+    3: [0,0,0,0,0, 12.5,25,25,25,25, 50,62.5,62.5,62.5,62.5],
+    8: [0,0,0,0,0, 16.40625,25,31.25,32.8125,33.203125, 50,62.5,65.625,66.40625,66.40625],
+    9: [0,0,0,0,0, 16.6015625,25,31.25,32.8125,33.203125, 50,62.5,65.625,66.40625,66.6015625]
+  };
+  var SNAPS = [{ k: 0, prev: null, t: '처음' }, { k: 1, prev: 0, t: '1번' }, { k: 3, prev: 2, t: '3번' }, { k: 9, prev: 8, t: '9번 · 완성' }];
+  var fmt = function (v) { return (Math.floor(v * 10 + 1e-9) / 10).toString() + '%'; };
+  document.getElementById('snaps').innerHTML = SNAPS.map(function (sn) {
+    var v = H[sn.k], pv = sn.prev === null ? null : H[sn.prev];
+    var bars = v.map(function (x, i) {
+      return '<div class="bar' + (pv && x > pv[i] + 1e-12 ? ' new' : '') + '" style="height:' + x + '%" title="' + BAL[i] + 'pt ' + fmt(x) + '"></div>';
+    }).join('') + '<div class="bar goal" style="height:100%"></div>';
+    return '<div class="snap"><div class="hd">' + sn.t + '</div><div class="chart">' + bars + '</div>' +
+      '<div class="rd">280pt → <b>' + fmt(v[14]) + '</b></div></div>';
+  }).join('');
+
+  // 완성 표 (엔진 advise 결과)
+  var PICK = ['-','-','-','-','-','A','A','A','A','A','B','A','A','A','A'];
+  document.getElementById('tbl').innerHTML = BAL.map(function (b, i) {
+    var t = PICK[i], cls = 'cell' + (t === '-' ? ' dim' : '') + (b === 120 ? ' hit' : '') + (b === 220 ? ' from' : '');
+    return '<div class="' + cls + '"><span class="bal">' + b + '<small>pt</small></span><span class="row2"><span class="tag ' + (t === '-' ? 'N' : t) + '">' + (t === '-' ? '–' : t) + '</span><span class="p">' + fmt(H[9][i]) + '</span></span></div>';
+  }).join('');
+})();
+</script>
+</body>
+</html>

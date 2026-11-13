@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { SAMPLE_TABLE } from '../engine/defaults'
-import { parseTiers, rtpOf } from '../engine/parse'
-import type { Tier } from '../engine/types'
 import { fmt, oddsText, pct } from '../lib/format'
+import { SAMPLE_TABLE, keyOf, parseTiers, rtpOf, sameTier, tierOf, type Tier } from '../lib/tiers'
 import { Badge, Card, SectionTitle } from './ui'
 
 /** scripts/fetch_nibuichi.py 가 만드는 자동 목록 (data 브랜치, 매시 15·45분) */
@@ -18,10 +16,6 @@ interface AutoData { fetchedAt: string | null; items: AutoItem[] }
 /** 같은 배당(가격·받는 pt·확률)의 가챠는 계산상 같은 판이라 한 줄로 묶는다 */
 interface Row { key: string; tier: Tier; items: AutoItem[]; checked: boolean }
 
-const tierOf = (cost: number, payout: number, p: number | null): Tier =>
-  ({ cost, payout, profit: payout - cost, m: payout / cost, p: p != null && Math.abs(p - 0.5) > 1e-9 ? p : null })
-const keyOf = (t: Tier) => `${t.cost}/${t.payout}/${t.p ?? ''}`
-const sameTier = (a: Tier, b: Tier) => keyOf(a) === keyOf(b)
 
 const RANGES = [
   { v: 'all', label: '전체', ok: () => true },
@@ -30,8 +24,10 @@ const RANGES = [
   { v: 'l', label: '1만~', ok: (c: number) => c >= 10000 },
 ] as const
 
-export function TierPicker({ tiers, onChange, autoSelectAll, balance, capFrac, allIn }: {
-  tiers: Tier[]; onChange: (t: Tier[]) => void; autoSelectAll: boolean; balance: number; capFrac: number; allIn: boolean
+export function TierPicker({ tiers, onChange, autoSelectAll, spendable, floor }: {
+  tiers: Tier[]; onChange: (t: Tier[]) => void; autoSelectAll: boolean
+  /** 쓸 수 있는 돈 = 잔고 − 손절선 (손절선 없으면 잔고) */
+  spendable: number; floor: number
 }) {
   const [showLocked, setShowLocked] = useState(false)
   const [auto, setAuto] = useState<AutoData | null>(null)
@@ -72,9 +68,9 @@ export function TierPicker({ tiers, onChange, autoSelectAll, balance, capFrac, a
   const qq = q.trim().toLowerCase()
   const hit = (it: AutoItem) => !qq || it.name.toLowerCase().includes(qq) || (it.title_ko ?? '').toLowerCase().includes(qq) || String(it.price).startsWith(qq.replace(/[^\d]/g, '') || '§')
   const shown = rows.filter((r) => okRange(r.tier.cost) && r.items.some(hit))
-  // 지금 잔고로 걸 수 있나 — 계산 엔진과 같은 규칙: 한 판 상한(기본 없음) + 올인 허용 여부
-  const canBet = (t: Tier) => (allIn ? t.cost <= balance : t.cost < balance) && (capFrac >= 1 || t.cost <= balance * capFrac + 1e-9)
-  const needBal = (t: Tier) => (capFrac >= 1 ? (allIn ? t.cost : t.cost + 1) : Math.ceil(t.cost / capFrac))
+  // 지금 걸 수 있나 — 계산 엔진과 같은 규칙: 쓸 수 있는 돈(잔고 − 손절선) ≥ 거는 돈 (올인 허용)
+  const canBet = (t: Tier) => t.cost <= spendable
+  const needBal = (t: Tier) => t.cost + floor
   const okRows = shown.filter((r) => canBet(r.tier))
   const lockedRows = shown.filter((r) => !canBet(r.tier))
   const visible = showLocked ? shown : okRows
@@ -142,7 +138,7 @@ export function TierPicker({ tiers, onChange, autoSelectAll, balance, capFrac, a
                 <button type="button" onClick={() => setShowLocked(!showLocked)}
                   className="flex w-full items-center justify-between gap-2 rounded-2xl border-2 border-dashed border-[var(--line)] px-3 py-2.5 text-left text-[13px] font-semibold text-[var(--ink-2)] hover:bg-[var(--surface-2)]">
                   <span>🔒 지금 잔고로 못 거는 판 <b className="num">{lockedRows.reduce((a, r) => a + r.items.filter(hit).length, 0)}개</b>
-                    <span className="block text-[11.5px] font-normal text-[var(--ink-3)]">한 판 최대 <b className="num">{fmt(capFrac >= 1 ? (allIn ? balance : balance - 1) : balance * capFrac)}pt</b>{capFrac < 1 && <> (잔고의 {Math.round(capFrac * 100)}%)</>} — 골라두면 잔고가 늘었을 때 계산에 들어간다</span></span>
+                    <span className="block text-[11.5px] font-normal text-[var(--ink-3)]">{floor > 0 ? '쓸 수 있는 돈' : '한 판 최대'} <b className="num">{fmt(spendable)}pt</b>{floor > 0 && <> (손절선 {fmt(floor)}pt 위)</>} — 골라두면 잔고가 늘었을 때 계산에 들어간다</span></span>
                   <span className="shrink-0 text-[12px]">{showLocked ? '접기 ▲' : '보기 ▼'}</span>
                 </button>
               </li>
@@ -186,7 +182,7 @@ export function TierPicker({ tiers, onChange, autoSelectAll, balance, capFrac, a
 function GachaRow({ it, tier: t, checked, twins, onToggle, lockedFrom }: {
   it: AutoItem; tier: Tier; checked: boolean; twins: number; onToggle: () => void; lockedFrom?: number
 }) {
-  const rtp = rtpOf(t, 0.5)
+  const rtp = rtpOf(t)
   const left = it.remaining != null && it.quantity ? it.remaining / it.quantity : null
   const img = it.thumb && /^https?:/.test(it.thumb) ? it.thumb : null
   return (

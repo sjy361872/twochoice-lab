@@ -11,12 +11,16 @@ export function Header() {
             <div className="text-[12.5px] text-white/80">제작자 파도(sjy361872)</div>
           </div>
         </div>
+        <div className="flex shrink-0 items-center gap-2">
+        <a href={`${import.meta.env.BASE_URL}how-it-works.html`}
+          className="rounded-full border-2 border-white/80 px-3 py-1.5 text-[13px] font-bold text-white hover:bg-white/10">계산 방법</a>
         {DONATE_URL && (
           <a href={DONATE_URL} target="_blank" rel="noopener"
             className="inline-flex items-center gap-1.5 rounded-full border-2 border-[var(--edge)] bg-white px-3.5 py-2 text-[13px] font-bold text-[#1a1a1a] shadow-[0_3px_0_var(--edge)]">
             <span aria-hidden>☕</span> 커피 한 잔 후원
           </a>
         )}
+        </div>
       </div>
     </header>
   )

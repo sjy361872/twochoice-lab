@@ -6,10 +6,12 @@ const MAX_MULT = 3
 /** ×1.5 · ×2 처럼 쓸데없는 0 없이 (예전엔 ×1.50 · ×1.10 으로 보였다) */
 const multText = (m: number) => `×${+m.toFixed(2)}`
 
-export function BalanceCard({ balance, target, onBalance, onTarget }: {
+export function BalanceCard({ balance, target, onBalance, onTarget, stopLoss, onStopLoss, floor }: {
   balance: number; target: number; onBalance: (v: number) => void; onTarget: (v: number) => void
+  stopLoss: number; onStopLoss: (v: number) => void; floor: number
 }) {
   const mult = balance > 0 ? target / balance : 1
+  const slBad = stopLoss > 0 && (stopLoss >= target || stopLoss >= balance)
   return (
     <Card>
       <SectionTitle step={1} title="내 포인트와 목표" />
@@ -18,7 +20,7 @@ export function BalanceCard({ balance, target, onBalance, onTarget }: {
           <span className="text-[13px] font-semibold text-[var(--ink-2)]">지금 가진 포인트</span>
           <div className="mt-1.5 flex items-center rounded-2xl border-2 border-[var(--edge)] bg-[var(--surface-2)] px-4 focus-within:border-coin">
             <input inputMode="numeric" className="num w-full bg-transparent py-3 text-[26px] font-extrabold outline-none"
-              value={balance ? fmt(balance) : ''} placeholder="0"
+              value={balance ? fmt(balance) : ''} placeholder="0" aria-label="지금 가진 포인트"
               onChange={(e) => onBalance(+e.target.value.replace(/[^\d]/g, '') || 0)} />
             <span className="text-[15px] font-bold text-[var(--ink-3)]">pt</span>
           </div>
@@ -29,7 +31,7 @@ export function BalanceCard({ balance, target, onBalance, onTarget }: {
           </span>
           <div className="mt-1.5 flex items-center rounded-2xl border-2 border-[var(--edge)] bg-[var(--surface-2)] px-4 focus-within:border-coin">
             <input inputMode="numeric" className="num w-full bg-transparent py-3 text-[26px] font-extrabold outline-none"
-              value={target ? fmt(target) : ''} placeholder="0"
+              value={target ? fmt(target) : ''} placeholder="0" aria-label="목표"
               onChange={(e) => onTarget(+e.target.value.replace(/[^\d]/g, '') || 0)} />
             <span className="text-[15px] font-bold text-[var(--ink-3)]">pt</span>
           </div>
@@ -55,6 +57,24 @@ export function BalanceCard({ balance, target, onBalance, onTarget }: {
           <span className="num w-12 shrink-0 text-right text-[14px] font-bold text-[var(--ink-2)]">{multText(mult)}</span>
         </div>
       )}
+
+      {/* 손절선: 이 밑으로는 안 내려가게. 0/빈칸 = 없음 */}
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t-2 border-dashed border-[var(--line)] pt-3">
+        <label className="flex items-center gap-2 text-[13px] font-semibold text-[var(--ink-2)]">
+          손절선 <span className="font-normal text-[var(--ink-3)]">(선택)</span>
+          <span className="flex items-center rounded-xl border-2 border-[var(--edge)] bg-[var(--surface-2)] px-2.5 focus-within:border-coin">
+            <input inputMode="numeric" className="num w-24 bg-transparent py-1.5 text-right text-[15px] font-extrabold outline-none"
+              value={stopLoss ? fmt(stopLoss) : ''} placeholder="없음" aria-label="손절선"
+              onChange={(e) => onStopLoss(+e.target.value.replace(/[^\d]/g, '') || 0)} />
+            <span className="ml-1 text-[12.5px] font-bold text-[var(--ink-3)]">pt</span>
+          </span>
+        </label>
+        {floor > 0 && !slBad && (
+          <span className="num text-[13px] text-[var(--ink-2)]">쓸 수 있는 돈 <b className="text-[var(--ink)]">{fmt(Math.max(0, balance - floor))}pt</b></span>
+        )}
+        {slBad && <span className="text-[12.5px] font-semibold text-lose">손절선은 지금 잔고·목표보다 작아야 한다</span>}
+        {!stopLoss && <span className="text-[12px] text-[var(--ink-3)]">이 밑으로는 안 내려가게 할 때</span>}
+      </div>
     </Card>
   )
 }
