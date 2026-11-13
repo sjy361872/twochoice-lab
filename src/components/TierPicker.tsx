@@ -118,7 +118,7 @@ export function TierPicker({ tiers, onChange, autoSelectAll }: {
             </span>
           </div>
 
-          <ul className="grid max-h-[520px] gap-1.5 overflow-y-auto pr-1">
+          <ul className="grid max-h-[520px] grid-cols-[minmax(0,1fr)] gap-1.5 overflow-y-auto pr-1">
             {shown.map((r) => <TierRow key={r.key} row={r} onToggle={() => toggle(r.tier)} />)}
             {!shown.length && <li className="py-6 text-center text-[13px] text-[var(--ink-3)]">조건에 맞는 판이 없다</li>}
           </ul>
@@ -181,8 +181,12 @@ function TierRow({ row, onToggle }: { row: Row; onToggle: () => void }) {
         <span className="flex shrink-0 flex-col items-end gap-1">
           <Badge tone={rtp >= 0.9 ? 'neutral' : 'lose'}>환원 {pct(rtp, 0)}</Badge>
           {total > 0 && (
-            <span className="h-1 w-14 overflow-hidden rounded-full bg-[var(--surface-2)]" title={`남은 ${fmt(left)} / ${fmt(total)}`}>
-              <span className="block h-full rounded-full bg-[var(--ink-3)]" style={{ width: `${Math.max(2, (left / total) * 100)}%` }} />
+            // 환원율이 아니라 '남은 양' (남은 개수 ÷ 전체). 막대만 두면 환원율 그래프로 오해해서 글자를 붙였다.
+            <span className="flex items-center gap-1.5" title={`남은 ${fmt(left)} / 전체 ${fmt(total)}`}>
+              <span className="num text-[11px] text-[var(--ink-3)]">남음 {left / total < 0.01 ? '<1' : Math.round((left / total) * 100)}%</span>
+              <span className="h-1 w-10 overflow-hidden rounded-full bg-[var(--surface-2)]">
+                <span className="block h-full rounded-full bg-[var(--ink-3)]" style={{ width: `${Math.max(2, (left / total) * 100)}%` }} />
+              </span>
             </span>
           )}
         </span>
