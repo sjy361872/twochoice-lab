@@ -39,7 +39,7 @@ export function ResultPanel({ res, busy, balance, target, onBalance }: {
       ) : !res.best.tier ? (
         <div className="rounded-2xl bg-rose-50 p-4 text-[14px] text-lose dark:bg-rose-500/10">
           <b>지금 잔고로 걸 수 있는 판이 없다.</b>
-          <span className="mt-1 block text-[13px] text-[var(--ink-2)]">한 판 상한(기본: 잔고의 50%)이나 전재산 금지 규칙 때문일 수 있다 — 아래 세부 설정.</span>
+          <span className="mt-1 block text-[13px] text-[var(--ink-2)]">가장 싼 판보다 잔고가 적거나, 세부 설정의 한 판 상한·올인 금지 때문일 수 있다.</span>
         </div>
       ) : (
         <Main res={res} busy={busy} balance={balance} target={target} onPlay={play} />

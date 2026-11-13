@@ -22,7 +22,7 @@ export function computeDP(tiers: Tier[], T: number, opt: EngineOptions, needW = 
   const floor = Math.max(0, opt.floor ?? 0)
   const { p, capFrac, hardCap } = opt
   const key = tiers.map((t) => `${t.cost}/${t.payout}/${t.p ?? ''}`).join('|') +
-    `#${p.toFixed(4)}#${Math.round(T)}#${needW ? 1 : 0}#${cap}#${Math.round(floor)}#${capFrac}#${hardCap ? 1 : 0}#${Math.round(opt.align ?? 0)}`
+    `#${p.toFixed(4)}#${Math.round(T)}#${needW ? 1 : 0}#${cap}#${Math.round(floor)}#${capFrac}#${hardCap ? 1 : 0}#${Math.round(opt.align ?? 0)}#${opt.stable ?? 0}`
   const hit = cache.get(key)
   if (hit) return hit
   if (!needW) {
@@ -80,7 +80,7 @@ export function computeDP(tiers: Tier[], T: number, opt: EngineOptions, needW = 
   }
 
   const bestM = tiers.reduce((a, t) => Math.max(a, (t.p ?? p) * t.m / p), 0)
-  const res: DPResult = { u, N, iT, V, W: null, VP: null, ts, T, floor, p, bestM, capFrac, hardCap }
+  const res: DPResult = { u, N, iT, V, W: null, VP: null, ts, T, floor, p, bestM, capFrac, hardCap, stable: opt.stable ?? 0 }
 
   if (needW) {
     // 기대 잔고는 '화면이 실제로 추천하는 정책'(pickTier, 안정화 규칙 포함)으로 계산한다.
@@ -144,7 +144,12 @@ export function pickTier(dp: DPResult, bal: number, T: number): Pick {
   if (!cands.length) return { tier: null, V: 0, done: false, margin: null }
   let bestC = cands[0]
   for (const c of cands) if (c.val > bestC.val) bestC = c
-  const STABLE = 0.003, FREE = 0.001
+  if (!dp.stable) {   // 순수 최적: 도달 확률 1위 그대로 (11/13 검토 — 안정화 규칙이 0.17~0.45%p 깎고 있었다)
+    let secondV = -1
+    for (const c of cands) if (c !== bestC && c.val > secondV) secondV = c.val
+    return { tier: bestC.r, V: bestC.val, done: false, margin: secondV >= 0 ? bestC.val - secondV : null }
+  }
+  const STABLE = dp.stable, FREE = Math.min(0.001, dp.stable)
   const rtp = (c: { r: Tier }) => (c.r.p != null ? c.r.p : dp.p) * c.r.m
   const band = cands.filter((c) => c.val >= bestC.val - STABLE)
   const ones = band.filter((c) => c.oneShot).sort((a, b) => a.r.cost - b.r.cost)

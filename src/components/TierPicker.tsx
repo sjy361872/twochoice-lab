@@ -30,8 +30,8 @@ const RANGES = [
   { v: 'l', label: '1만~', ok: (c: number) => c >= 10000 },
 ] as const
 
-export function TierPicker({ tiers, onChange, autoSelectAll, balance, capFrac }: {
-  tiers: Tier[]; onChange: (t: Tier[]) => void; autoSelectAll: boolean; balance: number; capFrac: number
+export function TierPicker({ tiers, onChange, autoSelectAll, balance, capFrac, allIn }: {
+  tiers: Tier[]; onChange: (t: Tier[]) => void; autoSelectAll: boolean; balance: number; capFrac: number; allIn: boolean
 }) {
   const [showLocked, setShowLocked] = useState(false)
   const [auto, setAuto] = useState<AutoData | null>(null)
@@ -72,9 +72,9 @@ export function TierPicker({ tiers, onChange, autoSelectAll, balance, capFrac }:
   const qq = q.trim().toLowerCase()
   const hit = (it: AutoItem) => !qq || it.name.toLowerCase().includes(qq) || (it.title_ko ?? '').toLowerCase().includes(qq) || String(it.price).startsWith(qq.replace(/[^\d]/g, '') || '§')
   const shown = rows.filter((r) => okRange(r.tier.cost) && r.items.some(hit))
-  // 지금 잔고로 걸 수 있나 — 계산 엔진과 같은 규칙: 전재산 금지 + 한 판 상한(기본 잔고의 50%)
-  const canBet = (t: Tier) => t.cost < balance && (capFrac >= 1 || t.cost <= balance * capFrac + 1e-9)
-  const needBal = (t: Tier) => (capFrac >= 1 ? t.cost + 1 : Math.ceil(t.cost / capFrac))
+  // 지금 잔고로 걸 수 있나 — 계산 엔진과 같은 규칙: 한 판 상한(기본 없음) + 올인 허용 여부
+  const canBet = (t: Tier) => (allIn ? t.cost <= balance : t.cost < balance) && (capFrac >= 1 || t.cost <= balance * capFrac + 1e-9)
+  const needBal = (t: Tier) => (capFrac >= 1 ? (allIn ? t.cost : t.cost + 1) : Math.ceil(t.cost / capFrac))
   const okRows = shown.filter((r) => canBet(r.tier))
   const lockedRows = shown.filter((r) => !canBet(r.tier))
   const visible = showLocked ? shown : okRows
@@ -142,7 +142,7 @@ export function TierPicker({ tiers, onChange, autoSelectAll, balance, capFrac }:
                 <button type="button" onClick={() => setShowLocked(!showLocked)}
                   className="flex w-full items-center justify-between gap-2 rounded-2xl border-2 border-dashed border-[var(--line)] px-3 py-2.5 text-left text-[13px] font-semibold text-[var(--ink-2)] hover:bg-[var(--surface-2)]">
                   <span>🔒 지금 잔고로 못 거는 판 <b className="num">{lockedRows.reduce((a, r) => a + r.items.filter(hit).length, 0)}개</b>
-                    <span className="block text-[11.5px] font-normal text-[var(--ink-3)]">한 판 최대 <b className="num">{fmt(capFrac >= 1 ? balance - 1 : balance * capFrac)}pt</b> (잔고의 {capFrac >= 1 ? '100% 미만' : `${Math.round(capFrac * 100)}%`}) — 골라두면 잔고가 늘었을 때 계산에 들어간다</span></span>
+                    <span className="block text-[11.5px] font-normal text-[var(--ink-3)]">한 판 최대 <b className="num">{fmt(capFrac >= 1 ? (allIn ? balance : balance - 1) : balance * capFrac)}pt</b>{capFrac < 1 && <> (잔고의 {Math.round(capFrac * 100)}%)</>} — 골라두면 잔고가 늘었을 때 계산에 들어간다</span></span>
                   <span className="shrink-0 text-[12px]">{showLocked ? '접기 ▲' : '보기 ▼'}</span>
                 </button>
               </li>

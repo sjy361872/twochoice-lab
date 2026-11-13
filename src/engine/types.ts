@@ -21,6 +21,8 @@ export interface EngineOptions {
   cap?: number
   /** 현재 잔고 — 격자 단위에 넣어 잔고가 격자 위에 정확히 오게 한다 (반올림 오차 제거) */
   align?: number
+  /** 추천 안정화 폭. 0(기본) = 순수 최적 — 매번 도달 확률 1위 판. 0.003 = 1위와 0.3%p 안이면 다른 기준으로 고름(예전 방식) */
+  stable?: number
 }
 
 export interface DPResult {
@@ -38,6 +40,7 @@ export interface DPResult {
   bestM: number
   capFrac: number
   hardCap: boolean
+  stable: number
 }
 
 export interface Pick {
