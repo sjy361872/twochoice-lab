@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* 디자인 토큰 — 동전(금색)과 밤하늘(남색). 다크 모드는 시스템 설정을 따른다. */
+@theme {
+  --font-sans: "Pretendard Variable", Pretendard, system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --color-coin: #f2b544;
+  --color-coin-deep: #c98a12;
+  --color-night: #1f2a44;
+  --color-win: #12a17a;
+  --color-lose: #e5484d;
+}
+
+:root {
+  --bg: #f6f3ec;
+  --surface: #ffffff;
+  --surface-2: #f1ede4;
+  --line: #e4ded1;
+  --ink: #1b2236;
+  --ink-2: #5b6274;
+  --ink-3: #8c90a0;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1220;
+    --surface: #151c2e;
+    --surface-2: #1c2539;
+    --line: #2a3550;
+    --ink: #eef1f8;
+    --ink-2: #a8b0c4;
+    --ink-3: #6f7891;
+    color-scheme: dark;
+  }
+}
+
+html { background: var(--bg); }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
+}
+.num { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
+input[type="range"] { accent-color: var(--color-coin-deep); }

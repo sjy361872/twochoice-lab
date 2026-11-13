@@ -1,0 +1,33 @@
+name: 사이트 배포 (GitHub Pages)
+# main 에 코드가 올라오면 빌드해서 Pages 로 배포한다. 가챠 목록은 사이트가 data 브랜치에서 직접 읽으므로 데이터 갱신 때는 재배포가 필요 없다.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency: { group: pages, cancel-in-progress: true }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx vitest run tests/engine.test.ts
+      - run: npm run build
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_DATA_URL: https://raw.githubusercontent.com/${{ github.repository }}/data/nibuichi.json
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: dist }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: '${{ steps.d.outputs.page_url }}' }
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4

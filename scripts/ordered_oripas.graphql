@@ -1,0 +1,84 @@
+query orderedOripasWithPagination($where: OrderedOripasWhereInput!, $sort: OripaSortEnum!, $first: Int, $after: String) {
+  orderedOripasWithPagination(
+    where: $where
+    sort: $sort
+    first: $first
+    after: $after
+  ) {
+    nodes {
+      ...OripaLabelFields
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}
+fragment OripaLabelFields on Oripa {
+  id
+  category
+  name
+  nameLogo
+  nameHidden
+  thumbnail
+  price
+  quantity
+  remaining
+  isR18
+  isDaily
+  requireSmsAuth
+  maxDrawsPerDay
+  isUserLimited
+  hasLastOne
+  maxDrawsPerUser
+  userDrawCountForLimit
+  requiredJackpotTicketCount
+  requiredAchievementType
+  requiredAchievementThreshold
+  requiredAchievementStatus {
+    remainingRequiredAmount
+    remainingAchievableCount
+    drawableCount
+    __typename
+  }
+  requiredRankName
+  drawDisabledReason
+  openAt
+  showCountdownBeforeOpen
+  closeAt
+  countdownStartMinutesBeforeClose
+  isDemoGachaDisabled
+  isOripaV2
+  isAppraised
+  publishStatus
+  forNewUser
+  roundNumber
+  subImages
+  extraPrizeThreshold
+  video {
+    id
+    title
+    videoData
+    deleted
+    __typename
+  }
+  cachedTags {
+    id
+    category
+    titleJa
+    titleEn
+    titleZhTw
+    titleZhCn
+    titleKo
+    titleTh
+    titleVi
+    badgeColor
+    __typename
+  }
+  __typename
+}
