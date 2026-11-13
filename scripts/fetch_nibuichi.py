@@ -1,12 +1,16 @@
-"""'둘 중 하나(にぶいち系)' 가챠 자동 목록 → public/data/nibuichi.json  (1시간마다 GitHub Actions)
+"""'둘 중 하나(にぶいち系)' 가챠 자동 목록 → public/data/nibuichi.json  (30분마다 GitHub Actions)
 
 요청 예절 (2026-10-05 에 과한 요청으로 429 차단을 겪었다):
  - 실행 한 번에 목록 조회만(50개씩 5~6페이지, 페이지 사이 1.5초). 경품 조회는 하지 않는다.
  - 429 면 즉시 멈추고 이전 JSON 을 그대로 둔다.
  - 썸네일은 이미지 저장소(storage.googleapis.com)에서 받고, 다시 올리지 않는다. 이미 읽은 가챠는 다시 읽지 않는다.
 
-배당('이기면 받는 pt')은 썸네일 글자에만 있다. 무료 OCR(RapidOCR = PaddleOCR 모델의 ONNX 판)로
-숫자·"pt"·"1/2" 를 읽어 후보를 만든다. 화면에서는 '자동 인식 · 확인' 으로만 보여주고 사용자가 확정한다.
+배당('이기면 받는 pt')과 확률은 썸네일 글자에만 있다 (API·상세 페이지 어디에도 숫자로 없음).
+읽는 순서 (11/13 정답표 49장 비교: OCR 둘 다 맞음 17/49, Gemini Flash-Lite·Flash 각각 49/49):
+ 1) Gemini Flash-Lite 로 읽는다 (무료 한도 넉넉).
+ 2) 배당이 가격의 1.55~1.85배(정답 49개 전부 1.6~1.8배)가 아니면 Gemini Flash 로 다시 읽어 같을 때만 쓴다.
+ 3) 키가 없거나 한도 초과면 무료 OCR(RapidOCR)로 임시값 → 다음 실행 때 Gemini 로 다시 시도.
+새 가챠·가격 변경·썸네일 변경 때만 읽는다. 이미 읽은 건 그대로 둔다.
 
     python scripts/fetch_nibuichi.py           # 갱신
     python scripts/fetch_nibuichi.py --reocr   # 저장된 결과 무시하고 전부 다시 읽기
@@ -22,7 +26,7 @@ from pathlib import Path
 import numpy as np
 import requests
 from PIL import Image
-from rapidocr_onnxruntime import RapidOCR
+
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "data" / "nibuichi.json"
@@ -32,6 +36,78 @@ QUERY = (ROOT / "scripts" / "ordered_oripas.graphql").read_text(encoding="utf-8"
 HEAD = {"Content-Type": "application/json", "Origin": "https://oripa.clove.jp", "Referer": "https://oripa.clove.jp/",
         "User-Agent": "Mozilla/5.0 (twochoice-lab; personal non-commercial)"}
 requests_made = 0
+READ_V = 7                     # 읽는 방식이 바뀌면 올린다 → 전부 다시 읽음
+GEMINI_MAX_CALLS = 40          # 실행 한 번에 Gemini 호출 상한 (무료 한도 보호)
+gemini_calls = 0
+
+
+def gemini_key():
+    import os
+    k = os.environ.get("GEMINI_API_KEY")
+    env = ROOT / ".env.local"
+    if not k and env.exists():
+        k = next((l.split("=", 1)[1].strip() for l in env.read_text().splitlines() if l.startswith("GEMINI_API_KEY=")), None)
+    return k or None
+
+
+def small_jpeg(path, width=960):
+    """보낼 때는 960px 로 줄인다 (원본 약 1900px — 토큰만 늘고 숫자는 충분히 큼)."""
+    im = Image.open(path).convert("RGB")
+    if im.width > width:
+        im = im.resize((width, round(im.height * width / im.width)))
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=88)
+    return buf.getvalue()
+
+
+def gemini_read(model, key, img_bytes, price):
+    """썸네일 → (배당 pt, 확률 분모). 실패는 예외. 키가 든 주소·헤더는 오류 메시지에 넣지 않는다."""
+    import base64
+    global gemini_calls
+    gemini_calls += 1
+    prompt = ("이 이미지는 일본 오리파 사이트의 '둘 중 하나(にぶいち)' 가챠 썸네일이다. "
+              f"한 번 뽑는 가격은 {price}pt 이다. 썸네일 아래쪽의 핵심 문구 '1/N 확률 X pt 이상 획득'에서 "
+              "N(당첨 확률의 분모)과 X(당첨 시 받는 최소 pt)를 그대로 읽어라. "
+              "'3등상 이상 중 1/10 확률' 같은 보조 문구, 환원율(%), 카드 번호는 무시한다. "
+              "글자가 안 보이면 null.")
+    schema = {"type": "object", "properties": {"odds_denominator": {"type": ["number", "null"]},
+                                               "payout_pt": {"type": ["integer", "null"]}},
+              "required": ["odds_denominator", "payout_pt"]}
+    body = {"contents": [{"parts": [
+        {"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(img_bytes).decode()}}, {"text": prompt}]}],
+        "generationConfig": {"responseMimeType": "application/json", "responseJsonSchema": schema, "temperature": 0}}
+    r = requests.post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                      json=body, headers={"x-goog-api-key": key}, timeout=90)
+    if r.status_code != 200:
+        raise RuntimeError(f"gemini {model} HTTP {r.status_code}")
+    d = json.loads("".join(x.get("text", "") for x in r.json()["candidates"][0]["content"]["parts"]))
+    return d.get("payout_pt"), d.get("odds_denominator")
+
+
+def in_range(v, price):
+    """니부이치 배당다움: 가격의 1.55~1.85배, 1,000pt 이상 판은 100 단위."""
+    return v is not None and 1.55 <= v / price <= 1.85 and not (price >= 1000 and v % 100)
+
+
+def read_with_gemini(key, path, price):
+    """→ (payout, p, confidence, source) 또는 None(호출 불가·실패)."""
+    if not key or gemini_calls >= GEMINI_MAX_CALLS:
+        return None
+    img = small_jpeg(path)
+    try:
+        v1, d1 = gemini_read("gemini-3.5-flash-lite", key, img, price)
+        time.sleep(4.5)   # 분당 15번 아래
+        if in_range(v1, price) and d1:
+            return v1, 1 / d1, 0.95, "gemini-lite"
+        v2, d2 = gemini_read("gemini-3.5-flash", key, img, price)
+        time.sleep(12.5)  # 분당 5번 아래
+        if v1 == v2 and d1 and d2 and abs(d1 - d2) < 0.05:
+            return v2, 1 / d2, (0.9 if in_range(v2, price) else 0.7), "gemini-both"
+        print(f"    Gemini 두 모델 불일치: {v1} 1/{d1} vs {v2} 1/{d2} → 직접 입력")
+        return None, None, 0.0, "gemini-disagree"
+    except Exception as e:
+        print("    Gemini 실패:", e)
+        return None
 
 
 def list_all():
@@ -151,17 +227,21 @@ def main():
         except (OSError, ValueError):
             prev = {}
     ocr = None
+    key = gemini_key()
+    print("배당 읽기:", "Gemini" if key else "키 없음 → OCR 만")
     CACHE.mkdir(parents=True, exist_ok=True)
     items = []
     for n in nibu:
         old = prev.get(n["id"])
         base = {"id": n["id"], "name": n["name"], "price": n["price"], "remaining": n.get("remaining"),
                 "quantity": n.get("quantity"), "url": f"https://oripa.clove.jp/ko/oripa/All/{n['id']}"}
-        if old and old.get("price") == n["price"] and old.get("ocr_v") == 6:
-            items.append({**old, **base})
-            continue
         th = n.get("thumbnail") or {}
         url = next((th[k][0] for k in ("ko", "ja", "en") if th.get(k)), None)
+        # 다시 읽지 않는 조건: 같은 방식으로, 같은 가격·같은 썸네일을, Gemini 로 읽었음 (OCR 임시값은 다음에 Gemini 로 재시도)
+        if (old and old.get("ocr_v") == READ_V and old.get("price") == n["price"] and old.get("thumb") in (url, "cached")
+                and (str(old.get("source", "")).startswith("gemini") or not key)):
+            items.append({**old, **base})
+            continue
         payout = p = None
         conf, texts = 0.0, []
         if url:
@@ -170,16 +250,28 @@ def main():
                 if not f.exists():
                     f.write_bytes(requests.get(url, timeout=30).content)
                     time.sleep(0.3)
-                ocr = ocr or RapidOCR()
-                payout, p, conf, texts = read_odds(ocr, Image.open(f), n["price"])
+                g = read_with_gemini(key, f, n["price"])
+                if g:
+                    payout, p, conf, source = g
+                else:   # Gemini 를 못 썼을 때만 무료 OCR 로 임시값
+                    from rapidocr_onnxruntime import RapidOCR
+                    ocr = ocr or RapidOCR()
+                    payout, p, conf, texts = read_odds(ocr, Image.open(f), n["price"])
+                    source = "ocr"
+                    if payout is not None and not in_range(payout, n["price"]):
+                        conf = min(conf, 0.3)   # 범위 밖이면 숨김
             except Exception as e:  # 한 장 실패로 전체를 멈추지 않는다
                 print("  썸네일 실패", n["name"], e)
-        items.append({**base, "payout": payout, "p": p, "confidence": conf, "ocr_v": 6, "ocr_text": texts[:40]})
-        print(f"  {n['price']:>7}pt {n['name'][:26]:<26} → {payout or '?'} {('1/%g' % (1 / p)) if p else ''} (신뢰 {conf})")
+                source = "error"
+        else:
+            source = "no-thumb"
+        items.append({**base, "payout": payout, "p": p, "confidence": conf, "source": source, "thumb": url,
+                      "ocr_v": READ_V, "ocr_text": texts[:40]})
+        print(f"  {n['price']:>7}pt {n['name'][:26]:<26} → {payout or '?'} {('1/%g' % (1 / p)) if p else ''} ({source}, 신뢰 {conf})")
     items.sort(key=lambda x: x["price"])
     OUT.write_text(json.dumps({"fetchedAt": datetime.now(timezone.utc).isoformat(), "items": items},
                               ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    print(f"완료 {time.time() - t0:.0f}초 · API 요청 총 {requests_made}번")
+    print(f"완료 {time.time() - t0:.0f}초 · 클로브 요청 {requests_made}번 · Gemini 호출 {gemini_calls}번")
 
 
 if __name__ == "__main__":

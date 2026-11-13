@@ -1,10 +1,10 @@
 name: "'둘 중 하나' 목록 갱신"
-# 1시간마다 클로브 목록(요청 약 6번)을 읽고, 결과 JSON 만 data 브랜치에 올린다.
+# 30분마다 클로브 목록(요청 약 6번)을 읽고, 결과 JSON 만 data 브랜치에 올린다.
 # 사이트는 VITE_DATA_URL(= raw.githubusercontent.com/<owner>/<repo>/data/nibuichi.json)에서 바로 읽으므로
 # 코드 브랜치에 데이터 커밋이 쌓이지 않고 사이트 재배포도 일어나지 않는다.
 on:
   schedule:
-    - cron: '17 * * * *'
+    - cron: '7,37 * * * *'   # 매시 7분·37분 (정각은 GitHub 이 붐벼서 늦어짐)
   workflow_dispatch: {}
 permissions:
   contents: write
@@ -28,6 +28,8 @@ jobs:
           git fetch origin data --depth=1 || true
           git show origin/data:nibuichi.json > /tmp/prev.json 2>/dev/null && mv /tmp/prev.json public/data/nibuichi.json || true
       - run: python scripts/fetch_nibuichi.py
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}   # 없으면 무료 OCR 로만 읽는다
       - name: data 브랜치에 올리기 (바뀐 경우만)
         run: |
           cp public/data/nibuichi.json /tmp/nibuichi.json
