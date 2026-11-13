@@ -26,3 +26,4 @@ tests/e2e/*.png
 .cache/
 __pycache__/
 .env.local
+mockups/img/

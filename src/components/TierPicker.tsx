@@ -9,7 +9,10 @@ import { Badge, Card, SectionTitle } from './ui'
 interface AutoItem {
   id: string; name: string; price: number; remaining: number | null; quantity: number | null
   url: string; payout: number | null; p: number | null; confidence: number; source?: string
+  thumb?: string | null      // 썸네일 주소 (클로브 이미지 저장소, 다시 올리지 않고 그대로 띄움)
+  title_ko?: string | null   // 한국어 썸네일에 적힌 제목 (Gemini 판독). 없으면 일본어 이름
 }
+const nameOf = (it: AutoItem) => it.title_ko || it.name
 interface AutoData { fetchedAt: string | null; items: AutoItem[] }
 
 /** 같은 배당(가격·받는 pt·확률)의 가챠는 계산상 같은 판이라 한 줄로 묶는다 */
@@ -66,7 +69,8 @@ export function TierPicker({ tiers, onChange, autoSelectAll }: {
   const toggle = (t: Tier) => onChange(tiers.some((x) => sameTier(x, t)) ? tiers.filter((x) => !sameTier(x, t)) : [...tiers, t].sort((a, b) => a.cost - b.cost))
   const okRange = RANGES.find((r) => r.v === range)!.ok
   const qq = q.trim().toLowerCase()
-  const shown = rows.filter((r) => okRange(r.tier.cost) && (!qq || r.items.some((it) => it.name.toLowerCase().includes(qq)) || String(r.tier.cost).startsWith(qq.replace(/[^\d]/g, '') || '§')))
+  const hit = (it: AutoItem) => !qq || it.name.toLowerCase().includes(qq) || (it.title_ko ?? '').toLowerCase().includes(qq) || String(it.price).startsWith(qq.replace(/[^\d]/g, '') || '§')
+  const shown = rows.filter((r) => okRange(r.tier.cost) && r.items.some(hit))
   const manual = tiers.filter((t) => !rows.some((r) => sameTier(r.tier, t)))
   const setAll = (on: boolean) => {
     const keys = new Set(shown.map((r) => r.key))
@@ -119,7 +123,10 @@ export function TierPicker({ tiers, onChange, autoSelectAll }: {
           </div>
 
           <ul className="grid max-h-[520px] grid-cols-[minmax(0,1fr)] gap-1.5 overflow-y-auto pr-1">
-            {shown.map((r) => <TierRow key={r.key} row={r} onToggle={() => toggle(r.tier)} />)}
+            {/* 화면은 가챠 한 줄씩(그림·남은 수량이 가챠마다 다르다), 선택은 배당 단위(같은 배당이면 계산상 같은 판) */}
+            {shown.flatMap((r) => r.items.filter(hit).map((it) => (
+              <GachaRow key={it.id} it={it} tier={r.tier} checked={r.checked} twins={r.items.length - 1} onToggle={() => toggle(r.tier)} />
+            )))}
             {!shown.length && <li className="py-6 text-center text-[13px] text-[var(--ink-3)]">조건에 맞는 판이 없다</li>}
           </ul>
         </>
@@ -136,7 +143,7 @@ export function TierPicker({ tiers, onChange, autoSelectAll }: {
               const t = y > it.price && y <= it.price * 10 ? tierOf(it.price, y, it.p ?? 0.5) : null
               return (
                 <li key={it.id} className="flex flex-wrap items-center gap-2 text-[13.5px]">
-                  <a href={it.url} target="_blank" rel="noopener" className="min-w-0 flex-1 truncate font-semibold hover:underline">{it.name}</a>
+                  <a href={it.url} target="_blank" rel="noopener" className="min-w-0 flex-1 truncate font-semibold hover:underline">{nameOf(it)}</a>
                   <span className="num font-bold">{fmt(it.price)} →</span>
                   <input value={fix[it.id] ?? ''} onChange={(e) => setFix({ ...fix, [it.id]: e.target.value })} inputMode="numeric" placeholder="받는 pt"
                     className="num w-24 rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-2 py-1 text-right font-bold outline-none focus:border-coin-deep" />
@@ -154,44 +161,48 @@ export function TierPicker({ tiers, onChange, autoSelectAll }: {
   )
 }
 
-function TierRow({ row, onToggle }: { row: Row; onToggle: () => void }) {
-  const { tier: t, items, checked } = row
+function GachaRow({ it, tier: t, checked, twins, onToggle }: {
+  it: AutoItem; tier: Tier; checked: boolean; twins: number; onToggle: () => void
+}) {
   const rtp = rtpOf(t, 0.5)
-  const left = items.reduce((a, it) => a + (it.remaining ?? 0), 0)
-  const total = items.reduce((a, it) => a + (it.quantity ?? 0), 0)
+  const left = it.remaining != null && it.quantity ? it.remaining / it.quantity : null
+  const img = it.thumb && /^https?:/.test(it.thumb) ? it.thumb : null
   return (
-    <li className={`overflow-hidden rounded-2xl border-2 transition ${checked ? 'border-coin bg-coin/10' : 'border-[var(--edge)] hover:bg-[var(--surface-2)]'}`}>
-      <button type="button" onClick={onToggle} aria-pressed={checked} className="flex w-full items-center gap-3 px-3 pt-2.5 pb-1.5 text-left">
-        <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 text-[12px] font-black ${checked
-          ? 'border-[var(--edge)] bg-coin text-white' : 'border-[var(--edge)]'}`} aria-hidden>
+    <li role="button" tabIndex={0} aria-pressed={checked} onClick={onToggle}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
+      className={`flex cursor-pointer gap-2.5 rounded-2xl border-2 p-2 transition outline-none focus-visible:ring-2 focus-visible:ring-coin ${checked
+        ? 'border-coin bg-coin/10' : 'border-[var(--edge)] bg-[var(--surface)] hover:bg-[var(--surface-2)]'}`}>
+      <div className="relative w-[104px] shrink-0">
+        {img
+          ? <img src={img} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-[74px] w-[104px] rounded-[10px] border-[1.5px] border-[var(--edge)] object-cover" />
+          : <div className="grid h-[74px] w-[104px] place-items-center rounded-[10px] border-[1.5px] border-[var(--edge)] bg-[var(--surface-2)] text-[11px] text-[var(--ink-3)]">그림 없음</div>}
+        <span className={`absolute -top-1.5 -left-1.5 grid h-[22px] w-[22px] place-items-center rounded-[7px] border-2 border-[var(--edge)] text-[13px] font-black text-white ${checked ? 'bg-coin' : 'bg-[var(--surface)]'}`} aria-hidden>
           {checked ? '✓' : ''}
         </span>
-        <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-          <span className="num text-[16px] font-extrabold whitespace-nowrap">{fmt(t.cost)} <span className="text-[var(--ink-3)]">→</span> {fmt(t.payout)}</span>
-          <span className="text-[12px] font-semibold text-[var(--ink-3)]">{oddsText(t.p)}</span>
-        </span>
-        <span className="flex shrink-0 flex-col items-end gap-1">
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col justify-between">
+        <div className="flex items-start justify-between gap-1.5">
+          <span className="truncate text-[13px] font-bold" title={it.name}>{nameOf(it)}</span>
           <Badge tone={rtp >= 0.9 ? 'neutral' : 'lose'}>환원 {pct(rtp, 0)}</Badge>
-          {total > 0 && (
-            // 환원율이 아니라 '남은 양' (남은 개수 ÷ 전체). 막대만 두면 환원율 그래프로 오해해서 글자를 붙였다.
-            <span className="flex items-center gap-1.5" title={`남은 ${fmt(left)} / 전체 ${fmt(total)}`}>
-              <span className="num text-[11px] text-[var(--ink-3)]">남음 {left / total < 0.01 ? '<1' : Math.round((left / total) * 100)}%</span>
-              <span className="h-1 w-10 overflow-hidden rounded-full bg-[var(--surface-2)]">
-                <span className="block h-full rounded-full bg-[var(--ink-3)]" style={{ width: `${Math.max(2, (left / total) * 100)}%` }} />
+        </div>
+        <div className="flex items-baseline gap-1.5">
+          <span className="num text-[16px] font-extrabold whitespace-nowrap">{fmt(t.cost)} <span className="text-[var(--ink-3)]">→</span> <span className="text-coin">{fmt(t.payout)}</span></span>
+          <span className="text-[11px] font-semibold text-[var(--ink-3)]">{oddsText(t.p)}</span>
+          {twins > 0 && <span className="shrink-0 rounded bg-[var(--surface-2)] px-1 text-[10.5px] font-semibold text-[var(--ink-3)]" title="같은 배당이라 함께 선택된다">같은 배당 +{twins}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          {left != null && (
+            <span className="flex min-w-0 flex-1 items-center gap-1.5" title={`남은 ${fmt(it.remaining!)} / 전체 ${fmt(it.quantity!)}`}>
+              <span className="num shrink-0 text-[11px] text-[var(--ink-3)]">남음 {left < 0.01 ? '<1' : Math.round(left * 100)}%</span>
+              <span className="h-[5px] min-w-8 flex-1 overflow-hidden rounded-full bg-[var(--surface-2)]">
+                <span className="block h-full rounded-full bg-[var(--ink-3)]" style={{ width: `${Math.max(3, left * 100)}%` }} />
               </span>
             </span>
           )}
-        </span>
-      </button>
-      {/* 가챠 페이지로 가는 링크 — 선택 버튼과 분리해서, 눌러도 선택이 바뀌지 않게 */}
-      <div className="flex flex-wrap gap-1.5 px-3 pb-2.5 pl-11">
-        {items.map((it) => (
-          <a key={it.id} href={it.url} target="_blank" rel="noopener"
-            className="inline-flex max-w-full items-center gap-1 rounded-lg bg-[var(--surface-2)] px-2 py-1 text-[12px] font-semibold text-[var(--ink-2)] transition hover:bg-[var(--line)] hover:text-[var(--ink)]">
-            <span className="truncate">{it.name}</span>
-            <span aria-hidden className="shrink-0">↗</span>
-          </a>
-        ))}
+          {/* 가챠 페이지로 — 눌러도 선택은 그대로 */}
+          <a href={it.url} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}
+            className="ml-auto shrink-0 rounded-md px-1 text-[11.5px] font-bold text-[var(--ink-2)] hover:text-[var(--ink)] hover:underline">가챠 보기 ↗</a>
+        </div>
       </div>
     </li>
   )

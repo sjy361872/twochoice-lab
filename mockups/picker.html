@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>판 고르기 목업</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  :root { --red: #e3350d; --edge: #1a1a1a; --bg: #f7f4ee; --s2: #f3efe7; --ink2: #55575f; --ink3: #8c90a0; --win: #1e9c5f; }
+  body { font-family: "Pretendard Variable", Pretendard, system-ui, sans-serif; background: #e9e6df; color: #1a1a1a; padding: 24px 16px 48px; }
+  h1 { font-size: 20px; text-align: center; }
+  .sub { text-align: center; color: #666; font-size: 13px; margin: 6px auto 22px; max-width: 760px; line-height: 1.6; }
+  .wrap { display: flex; flex-wrap: wrap; gap: 26px; justify-content: center; align-items: flex-start; }
+  .col { width: 380px; max-width: 100%; }
+  .label { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+  .desc { font-size: 12.5px; color: #555; margin-bottom: 10px; line-height: 1.55; }
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .card { background: #fff; border: 2.5px solid var(--edge); box-shadow: 0 4px 0 var(--edge); border-radius: 24px; padding: 16px; }
+  .step { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; margin-bottom: 12px; }
+  .step i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; background: var(--red); color: #fff; border: 2px solid var(--edge); }
+  .meta { font-size: 12px; color: var(--ink3); margin: -4px 0 10px; }
+  .meta b { color: var(--ink2); }
+  .chk { width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--edge); background: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 900; color: #fff; flex-shrink: 0; }
+  .on .chk { background: var(--red); }
+  .rtp { border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700; background: var(--s2); white-space: nowrap; }
+  .rtp.bad { background: #ffe0d8; color: #c12b08; }
+  .left { font-size: 11px; color: var(--ink3); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .bar { height: 5px; border-radius: 9px; background: var(--s2); overflow: hidden; flex: 1; min-width: 40px; }
+  .bar > span { display: block; height: 100%; background: var(--ink3); border-radius: 9px; }
+  .go { font-size: 11.5px; font-weight: 700; color: var(--ink2); text-decoration: none; white-space: nowrap; }
+  .pay { font-weight: 800; }
+  .pay em { font-style: normal; color: var(--red); }
+  .odds { font-size: 11px; color: var(--ink3); font-weight: 600; }
+
+  /* M1. 2열 카드 그리드 */
+  .g1 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .g1 .it { border: 2px solid var(--edge); border-radius: 16px; overflow: hidden; background: #fff; position: relative; }
+  .g1 .it.on { border-color: var(--red); box-shadow: 0 0 0 2px var(--red); }
+  .g1 img { width: 100%; aspect-ratio: 7/5; object-fit: cover; display: block; }
+  .g1 .chk { position: absolute; top: 8px; left: 8px; }
+  .g1 .rtp { position: absolute; top: 8px; right: 8px; }
+  .g1 .bd { padding: 8px 10px 10px; }
+  .g1 .nm { font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .g1 .pay { font-size: 15px; margin: 2px 0 6px; }
+
+  /* M2. 가로 리스트 (왼쪽 썸네일) */
+  .g2 { display: grid; gap: 8px; }
+  .g2 .it { display: flex; gap: 10px; align-items: stretch; border: 2px solid var(--edge); border-radius: 16px; padding: 8px; background: #fff; }
+  .g2 .it.on { border-color: var(--red); background: #fff4f0; }
+  .g2 .th { position: relative; width: 104px; flex-shrink: 0; }
+  .g2 img { width: 104px; height: 74px; object-fit: cover; border-radius: 10px; display: block; border: 1.5px solid var(--edge); }
+  .g2 .chk { position: absolute; top: -6px; left: -6px; }
+  .g2 .bd { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+  .g2 .top { display: flex; justify-content: space-between; gap: 6px; align-items: flex-start; }
+  .g2 .nm { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .g2 .pay { font-size: 16px; }
+  .g2 .ft { display: flex; gap: 8px; align-items: center; }
+
+  /* M3. 배당별 묶음 + 가챠 가로 스크롤 */
+  .g3 { display: grid; gap: 10px; }
+  .g3 .grp { border: 2px solid var(--edge); border-radius: 18px; background: #fff; overflow: hidden; }
+  .g3 .grp.on { border-color: var(--red); }
+  .g3 .hd { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+  .g3 .grp.on .hd { background: #fff4f0; }
+  .g3 .hd .pay { font-size: 17px; flex: 1; }
+  .g3 .rail { display: flex; gap: 8px; overflow-x: auto; padding: 0 12px 12px; scrollbar-width: thin; }
+  .g3 .mini { width: 132px; flex-shrink: 0; }
+  .g3 .mini img { width: 132px; height: 94px; object-fit: cover; border-radius: 10px; border: 1.5px solid var(--edge); display: block; }
+  .g3 .mini .nm { font-size: 11.5px; font-weight: 700; margin: 4px 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .g3 .cnt { font-size: 11px; font-weight: 700; color: var(--ink3); }
+
+  /* M4. 큰 배너 카드 (그림 위에 정보) */
+  .g4 { display: grid; gap: 10px; }
+  .g4 .it { position: relative; border-radius: 18px; overflow: hidden; border: 2.5px solid var(--edge); }
+  .g4 .it.on { border-color: var(--red); box-shadow: 0 0 0 2px var(--red); }
+  .g4 img { width: 100%; aspect-ratio: 16/8; object-fit: cover; display: block; }
+  .g4 .ov { position: absolute; inset: auto 0 0 0; padding: 26px 12px 10px; background: linear-gradient(transparent, rgba(0,0,0,.82)); color: #fff; }
+  .g4 .ov .nm { font-size: 13px; font-weight: 700; opacity: .9; }
+  .g4 .ov .row { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+  .g4 .ov .pay { font-size: 22px; } .g4 .ov .pay em { color: #ffd2c4; }
+  .g4 .ov .left { color: #ddd; } .g4 .ov .bar { background: rgba(255,255,255,.25); } .g4 .ov .bar > span { background: #fff; }
+  .g4 .chk { position: absolute; top: 10px; left: 10px; }
+  .g4 .rtp { position: absolute; top: 10px; right: 10px; }
+  .g4 .go { color: #fff; }
+</style>
+</head>
+<body>
+<h1>2번 판 고르기 · 이미지 넣은 목업 4가지</h1>
+<p class="sub">실제 썸네일을 썼다. 이름은 <b>한국어 썸네일에 적힌 제목</b>(Gemini가 배당 읽을 때 같이 읽음)으로 바꿨다.<br>
+남은 수량은 <b>가챠마다 따로</b> 보여준다 (같은 배당이 둘이어도 각자 막대). 남은 수량 숫자는 예시.</p>
+
+<div class="wrap">
+  <div class="col"><div class="label">M1. 2열 카드 그리드</div><div class="desc">그림이 크게 보여 제일 "쇼핑몰" 같다. 한 화면에 4~6개. 같은 배당이라도 카드가 따로라 남은 수량이 헷갈리지 않는다.</div>
+    <div class="card"><div class="step"><i>2</i>판 고르기</div><div class="meta">지금 열린 니부이치 <b>23개</b> · 30분마다 갱신</div><div class="g1" id="m1"></div></div></div>
+
+  <div class="col"><div class="label">M2. 왼쪽 썸네일 리스트</div><div class="desc">그림은 작게, 숫자는 크게. 많이 훑어보기 좋고 지금 구조와 가장 비슷해서 익숙하다. 추천.</div>
+    <div class="card"><div class="step"><i>2</i>판 고르기</div><div class="meta">지금 열린 니부이치 <b>23개</b> · 30분마다 갱신</div><div class="g2" id="m2"></div></div></div>
+
+  <div class="col"><div class="label">M3. 배당별 묶음 + 가로 스크롤</div><div class="desc">계산은 배당 단위라 "1,000→1,800" 묶음을 한 번에 고르고, 그 안의 가챠들을 옆으로 넘겨 본다. 남은 수량은 가챠마다.</div>
+    <div class="card"><div class="step"><i>2</i>판 고르기</div><div class="meta">지금 열린 니부이치 <b>23개</b> · 배당 <b>20종</b></div><div class="g3" id="m3"></div></div></div>
+
+  <div class="col"><div class="label">M4. 큰 배너 카드</div><div class="desc">썸네일을 통째로 보여주고 정보는 그림 위에. 가장 화려하지만 스크롤이 길어진다.</div>
+    <div class="card"><div class="step"><i>2</i>판 고르기</div><div class="meta">지금 열린 니부이치 <b>23개</b> · 30분마다 갱신</div><div class="g4" id="m4"></div></div></div>
+</div>
+
+<script>
+const D = [
+  {"id":"cmw09dyk543ab01s6zls6mvqv","ko":"몽환전설","price":99,"payout":160,"odds":1.9,"rem":3502093,"qty":5000000},
+  {"id":"cmvkez6tj01jo01s67c3ilogl","ko":"기념을 향한 도전장","price":100,"payout":180,"odds":2,"rem":505355,"qty":1000000},
+  {"id":"cmvp2hfju02sd01s6h2mn2czi","ko":"일도양단 1/2 가챠","price":100,"payout":180,"odds":2,"rem":96000,"qty":400000},
+  {"id":"cmvasc5gb004801s6be5t6izr","ko":"1/2 두근두근 뽑기","price":300,"payout":480,"odds":2,"rem":201000,"qty":240000},
+  {"id":"cmvkb19fv0pi901s66gzcymb8","ko":"2분의 1 부스트","price":500,"payout":900,"odds":2,"rem":41000,"qty":300000},
+  {"id":"cmvouz0x7040301s6z58yxyqf","ko":"반반 승부","price":500,"payout":900,"odds":2,"rem":228000,"qty":300000},
+  {"id":"cmvp3q1qe06uj01s61sqgp9yu","ko":"1/2의 승리를 거머쥐세요","price":1000,"payout":1800,"odds":2,"rem":100000,"qty":200000},
+  {"id":"cmvp3qu6b06nb01s6rrk38dsa","ko":"50:50 승부!","price":10000,"payout":18000,"odds":2,"rem":7200,"qty":20000},
+]
+const on = new Set(['cmvkez6tj01jo01s67c3ilogl','cmvp2hfju02sd01s6h2mn2czi','cmvp3q1qe06uj01s61sqgp9yu','cmvkb19fv0pi901s66gzcymb8','cmvouz0x7040301s6z58yxyqf'])
+const f = (n) => n.toLocaleString('ko-KR')
+const rtp = (d) => Math.round(d.payout / d.odds / d.price * 100)
+const R = (d) => `<span class="rtp ${rtp(d) < 90 ? 'bad' : ''}">환원 ${rtp(d)}%</span>`
+const P = (d) => `<span class="pay num">${f(d.price)} → <em>${f(d.payout)}</em></span> <span class="odds">1/${d.odds}</span>`
+const L = (d) => { const r = d.rem / d.qty; return `<span class="left num">남음 ${Math.round(r * 100)}%<span class="bar"><span style="width:${Math.max(3, r * 100)}%"></span></span></span>` }
+const img = (d) => `<img src="img/${d.id}.jpg" alt="">`
+const C = (d) => `<span class="chk">${on.has(d.id) ? '✓' : ''}</span>`
+const go = `<a class="go" href="#">가챠 보기 ↗</a>`
+
+document.getElementById('m1').innerHTML = D.slice(0, 6).map((d) => `<div class="it ${on.has(d.id) ? 'on' : ''}">${img(d)}${C(d)}${R(d)}<div class="bd"><div class="nm">${d.ko}</div><div>${P(d)}</div>${L(d)}</div></div>`).join('')
+
+document.getElementById('m2').innerHTML = D.map((d) => `<div class="it ${on.has(d.id) ? 'on' : ''}"><div class="th">${img(d)}${C(d)}</div><div class="bd"><div class="top"><div class="nm">${d.ko}</div>${R(d)}</div><div>${P(d)}</div><div class="ft">${L(d)}${go}</div></div></div>`).join('')
+
+const groups = {}; D.forEach((d) => { const k = d.price + '/' + d.payout; (groups[k] = groups[k] || []).push(d) })
+document.getElementById('m3').innerHTML = Object.values(groups).map((g) => { const d = g[0], o = g.some((x) => on.has(x.id)); return `<div class="grp ${o ? 'on' : ''}"><div class="hd ${o ? 'on' : ''}"><span class="chk" style="${o ? 'background:var(--red)' : ''}">${o ? '✓' : ''}</span>${P(d)}${R(d)}</div><div class="rail">${g.map((x) => `<div class="mini">${img(x)}<div class="nm">${x.ko}</div>${L(x)}</div>`).join('')}${g.length > 1 ? '' : ''}</div></div>` }).join('')
+
+document.getElementById('m4').innerHTML = D.slice(0, 5).map((d) => `<div class="it ${on.has(d.id) ? 'on' : ''}">${img(d)}${C(d)}${R(d)}<div class="ov"><div class="nm">${d.ko}</div><div class="row"><div>${P(d)}</div>${go}</div>${L(d)}</div></div>`).join('')
+</script>
+</body>
+</html>

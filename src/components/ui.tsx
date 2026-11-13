@@ -45,5 +45,5 @@ export function Badge({ children, tone = 'neutral' }: { children: ReactNode; ton
     lose: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
     coin: 'bg-coin/20 text-coin-deep dark:text-coin',
   }[tone]
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${c}`}>{children}</span>
+  return <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ${c}`}>{children}</span>
 }

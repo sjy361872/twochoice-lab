@@ -45,7 +45,7 @@ def run_gemini(model):
     for t in TRUTH:
         t0 = time.time()
         try:
-            v, den = F.gemini_read(model, key, F.small_jpeg(THUMBS / f"{t['id']}.jpg"), t["price"])
+            v, den, _ = F.gemini_read(model, key, F.small_jpeg(THUMBS / f"{t['id']}.jpg"), t["price"])
             rows.append({"id": t["id"], "payout": v, "p": (1 / den) if den else None, "show": v is not None,
                          "sec": round(time.time() - t0, 2)})
         except Exception as e:
