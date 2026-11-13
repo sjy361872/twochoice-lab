@@ -21,7 +21,7 @@ export function ResultPanel({ res, busy, balance, target, onBalance }: {
       <SectionTitle step={3} title="지금 누를 판" hint={busy ? '계산 중…' : undefined} />
       {history.length > 0 && (
         <button type="button" onClick={undo}
-          className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[var(--line)] bg-[var(--surface-2)] py-3 text-[15px] font-extrabold text-[var(--ink)] transition hover:border-[var(--ink-3)] active:scale-[.99]">
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[var(--edge)] bg-[var(--surface)] py-3 text-[15px] font-extrabold shadow-[0_3px_0_var(--edge)] text-[var(--ink)] transition hover:border-[var(--ink-3)] active:scale-[.99]">
           ↶ 되돌리기 <span className="num text-[13px] font-semibold text-[var(--ink-3)]">({fmt(history[history.length - 1])}pt로)</span>
         </button>
       )}
@@ -58,7 +58,7 @@ function Main({ res, busy, balance, target, onPlay }: {
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="num text-[34px] leading-none font-extrabold tracking-tight">
-          {fmt(t.cost)} <span className="text-[var(--ink-3)]">→</span> <span className="text-coin-deep dark:text-coin">{fmt(t.payout)}</span>
+          {fmt(t.cost)} <span className="text-[var(--ink-3)]">→</span> <span className="text-coin">{fmt(t.payout)}</span>
         </div>
         <span className="rounded-full bg-[var(--surface-2)] px-2.5 py-1 text-[12.5px] font-bold text-[var(--ink-2)]">{oddsText(t.p)} 확률</span>
       </div>
@@ -83,11 +83,11 @@ function Main({ res, busy, balance, target, onPlay }: {
       <div className="mt-5">
         <div className="grid grid-cols-2 gap-2">
           <button type="button" disabled={busy} onClick={() => onPlay(balance + t.profit)}
-            className="rounded-2xl bg-win px-3 py-3 text-[15px] font-extrabold text-white transition active:scale-[.98] disabled:opacity-50">
+            className="rounded-2xl border-2 border-[var(--edge)] bg-win px-3 py-3 shadow-[0_3px_0_var(--edge)] text-[15px] font-extrabold text-white transition active:scale-[.98] disabled:opacity-50">
             이겼다 <span className="num font-bold opacity-85">+{fmt(t.profit)}</span>
           </button>
           <button type="button" disabled={busy} onClick={() => onPlay(balance - t.cost)}
-            className="rounded-2xl bg-lose px-3 py-3 text-[15px] font-extrabold text-white transition active:scale-[.98] disabled:opacity-50">
+            className="rounded-2xl border-2 border-[var(--edge)] bg-lose px-3 py-3 shadow-[0_3px_0_var(--edge)] text-[15px] font-extrabold text-white transition active:scale-[.98] disabled:opacity-50">
             졌다 <span className="num font-bold opacity-85">−{fmt(t.cost)}</span>
           </button>
         </div>

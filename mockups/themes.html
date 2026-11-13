@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>색 테마 목업</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: "Pretendard Variable", Pretendard, system-ui, sans-serif; background: #e9e6df; color: #222; padding: 24px 16px 48px; }
+  h1 { font-size: 20px; text-align: center; }
+  .sub { text-align: center; color: #666; font-size: 13px; margin: 6px 0 22px; }
+  .wrap { display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; }
+  .col { width: 360px; max-width: 100%; }
+  .label { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+  .desc { font-size: 12.5px; color: #555; margin-bottom: 10px; line-height: 1.5; }
+  .phone { border-radius: 28px; overflow: hidden; box-shadow: 0 18px 40px -20px rgba(0,0,0,.45); }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* 공통 레이아웃 */
+  .top { display: flex; align-items: center; gap: 10px; padding: 18px 16px 14px; }
+  .top .t { font-weight: 800; font-size: 18px; }
+  .top .s { font-size: 12px; opacity: .75; }
+  .body { padding: 12px; display: grid; gap: 12px; }
+  .card { border-radius: 20px; padding: 16px; }
+  .step { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; margin-bottom: 12px; }
+  .step i { font-style: normal; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; }
+  .inp { border-radius: 14px; padding: 10px 14px; font-size: 24px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
+  .inp small { font-size: 13px; opacity: .6; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; }
+  .row { border-radius: 16px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .chk { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; font-size: 12px; font-weight: 900; }
+  .row .n { font-weight: 800; font-size: 15px; flex: 1; }
+  .row .n span { font-size: 11px; font-weight: 600; opacity: .6; margin-left: 4px; }
+  .badge { border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+  .link { display: inline-block; margin: 6px 0 0 30px; border-radius: 8px; padding: 3px 8px; font-size: 11.5px; font-weight: 600; }
+  .big { font-size: 30px; font-weight: 800; }
+  .bar { height: 12px; border-radius: 99px; overflow: hidden; display: flex; margin: 14px 0 8px; }
+  .two { display: flex; justify-content: space-between; }
+  .two b { font-size: 22px; font-weight: 800; display: block; }
+  .two small { font-size: 11.5px; }
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .btns div { border-radius: 14px; padding: 11px; text-align: center; font-weight: 800; font-size: 14px; }
+
+  /* A. 몬스터볼 레드 — 빨강·흰색·검정 테두리, 밝고 또렷 */
+  .A { background: #f7f4ee; }
+  .A .top { background: #e3350d; color: #fff; border-bottom: 4px solid #1a1a1a; }
+  .A .card { background: #fff; border: 2.5px solid #1a1a1a; box-shadow: 0 3px 0 #1a1a1a; }
+  .A .step i { background: #e3350d; color: #fff; border: 2px solid #1a1a1a; }
+  .A .inp { background: #f7f4ee; border: 2px solid #1a1a1a; }
+  .A .chip { border: 2px solid #1a1a1a; background: #fff; }
+  .A .chip.on { background: #e3350d; color: #fff; }
+  .A .row { border: 2px solid #1a1a1a; background: #fff; }
+  .A .row.on { background: #fff1ec; border-color: #e3350d; }
+  .A .chk { border: 2px solid #1a1a1a; }
+  .A .row.on .chk { background: #e3350d; color: #fff; }
+  .A .badge { background: #f1ede4; } .A .badge.bad { background: #ffe0d8; color: #c12b08; }
+  .A .link { background: #f1ede4; color: #333; }
+  .A .big em { color: #e3350d; font-style: normal; }
+  .A .win { background: #2bb673; } .A .lose { background: #e3350d; }
+  .A .two .w { color: #1e9c5f; } .A .two .l { color: #e3350d; }
+  .A .btns .win, .A .btns .lose { color: #fff; border: 2px solid #1a1a1a; box-shadow: 0 3px 0 #1a1a1a; }
+
+  /* B. 전기 옐로 — 노랑·파랑(로고 계열 색), 경쾌하고 친근 */
+  .B { background: #eaf3ff; }
+  .B .top { background: linear-gradient(135deg, #ffcb05, #ffde59); color: #1d3f8f; }
+  .B .top .s { color: #2a75bb; opacity: 1; }
+  .B .card { background: #fff; border: 1px solid #cfe0f7; box-shadow: 0 10px 24px -16px rgba(42,117,187,.6); }
+  .B .step i { background: #2a75bb; color: #ffcb05; }
+  .B .inp { background: #f2f7ff; border: 1px solid #cfe0f7; color: #1d3f8f; }
+  .B .chip { background: #f2f7ff; color: #2a75bb; border: 1px solid #cfe0f7; }
+  .B .chip.on { background: #ffcb05; color: #1d3f8f; border-color: #e0b000; }
+  .B .row { background: #fff; border: 1.5px solid #cfe0f7; }
+  .B .row.on { border-color: #ffcb05; background: #fffbe6; }
+  .B .chk { border: 2px solid #cfe0f7; }
+  .B .row.on .chk { background: #ffcb05; border-color: #e0b000; color: #1d3f8f; }
+  .B .badge { background: #eaf3ff; color: #2a75bb; } .B .badge.bad { background: #ffe8e6; color: #d6402f; }
+  .B .link { background: #eaf3ff; color: #2a75bb; }
+  .B .big { color: #1d3f8f; } .B .big em { color: #e0a800; font-style: normal; }
+  .B .win { background: #3cc47c; } .B .lose { background: #ff6b5a; }
+  .B .two .w { color: #22a565; } .B .two .l { color: #e5503f; }
+  .B .btns .win, .B .btns .lose { color: #fff; }
+
+  /* C. 도감 레트로 다크 — 진한 빨강 테두리 + 연두색 화면, 게임기 느낌 */
+  .C { background: #8f1d1d; }
+  .C .top { background: #b52222; color: #fff; }
+  .C .top .dot { width: 14px; height: 14px; border-radius: 50%; background: #5fd3ff; box-shadow: 0 0 0 3px #fff, 0 0 12px #5fd3ff; margin-right: 4px; }
+  .C .body { background: #8f1d1d; }
+  .C .card { background: #1d2b1f; color: #c9f2b0; border: 3px solid #0e140f; box-shadow: inset 0 0 0 2px #2c4030; }
+  .C .step i { background: #c9f2b0; color: #1d2b1f; }
+  .C .inp { background: #13201a; color: #c9f2b0; border: 1px solid #2c4030; font-family: ui-monospace, Consolas, monospace; }
+  .C .chip { background: #13201a; color: #8fc77a; border: 1px solid #2c4030; }
+  .C .chip.on { background: #c9f2b0; color: #1d2b1f; }
+  .C .row { background: #13201a; border: 1px solid #2c4030; }
+  .C .row.on { border-color: #c9f2b0; }
+  .C .chk { border: 2px solid #4b6b4f; }
+  .C .row.on .chk { background: #c9f2b0; color: #1d2b1f; }
+  .C .badge { background: #2c4030; color: #c9f2b0; } .C .badge.bad { background: #5a1e1e; color: #ff9a8a; }
+  .C .link { background: #2c4030; color: #c9f2b0; }
+  .C .big { font-family: ui-monospace, Consolas, monospace; } .C .big em { color: #ffe066; font-style: normal; }
+  .C .win { background: #7ee36b; } .C .lose { background: #ff5f4a; }
+  .C .two .w { color: #7ee36b; } .C .two .l { color: #ff8a78; }
+  .C .btns .win { color: #13201a; } .C .btns .lose { color: #fff; }
+  .C .sub2 { color: #8fc77a; }
+</style>
+</head>
+<body>
+<h1>니부이치 계산기 · 색 테마 3가지</h1>
+<p class="sub">같은 화면(1·2·3번 카드)에 색만 바꿔 입힌 예시. 공식 로고·캐릭터 그림은 쓰지 않고 색감만 빌렸다.</p>
+
+<div class="wrap">
+<!-- 같은 마크업을 세 테마로 -->
+<template id="tpl">
+  <div class="top"><span class="dot"></span><svg width="34" height="34" viewBox="0 0 64 64"><circle cx="32" cy="32" r="28" fill="currentColor" opacity=".25"/><path d="M4 32h56" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="9" fill="#fff" stroke="currentColor" stroke-width="5"/></svg>
+    <div><div class="t">니부이치 계산기</div><div class="s">제작자 파도(sjy361872)</div></div></div>
+  <div class="body">
+    <div class="card">
+      <div class="step"><i>1</i>내 포인트와 목표</div>
+      <div class="inp num">10,000 <small>pt</small></div>
+      <div class="chips"><span class="chip">×1.05</span><span class="chip on">×1.1</span><span class="chip">×1.5</span><span class="chip">×2</span><span class="chip">×3</span></div>
+    </div>
+    <div class="card">
+      <div class="step"><i>2</i>판 고르기</div>
+      <div class="row on"><div class="chk">✓</div><div class="n num">1,000 → 1,800<span>1/2</span></div><span class="badge">환원 90%</span></div>
+      <span class="link">にぶいち 1/2を勝利せよ ↗</span>
+      <div class="row"><div class="chk"></div><div class="n num">99 → 160<span>1/1.9</span></div><span class="badge bad">환원 85%</span></div>
+    </div>
+    <div class="card">
+      <div class="step"><i>3</i>지금 누를 판</div>
+      <div class="big num">1,000 → <em>1,800</em></div>
+      <div class="bar"><div class="win" style="width:82%"></div><div class="lose" style="flex:1"></div></div>
+      <div class="two"><div><b class="w num">82%</b><small>11,000 도달</small></div><div style="text-align:right"><b class="l num">18%</b><small>실패하면 약 −10,000</small></div></div>
+      <div class="btns"><div class="win">이겼다 +800</div><div class="lose">졌다 −1,000</div></div>
+    </div>
+  </div>
+</template>
+
+<div class="col"><div class="label">A. 몬스터볼 레드</div><div class="desc">빨강·흰색에 굵은 검정 테두리. 가장 "포켓몬 게임" 같고 또렷하다. 라이트 모드 중심.</div><div class="phone A" data-tpl></div></div>
+<div class="col"><div class="label">B. 전기 옐로 & 블루</div><div class="desc">노랑·파랑 조합. 밝고 친근해서 오픈챗 사람들한테 무난하다. 눈이 편한 편.</div><div class="phone B" data-tpl></div></div>
+<div class="col"><div class="label">C. 도감 레트로 (다크)</div><div class="desc">빨간 기계 몸체 + 연두색 화면. 게임기 느낌이 강하고 개성 있다. 밤에 보기 좋다.</div><div class="phone C" data-tpl></div></div>
+</div>
+
+<script>
+  const t = document.getElementById('tpl').innerHTML
+  document.querySelectorAll('[data-tpl]').forEach((el) => { el.innerHTML = t })
+  document.querySelectorAll('.A .top .dot, .B .top .dot').forEach((d) => d.remove())
+</script>
+</body>
+</html>

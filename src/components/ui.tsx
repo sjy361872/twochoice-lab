@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_1px_2px_rgba(20,25,40,.04),0_12px_32px_-18px_rgba(20,25,40,.25)] sm:p-6 ${className}`}>
+    <section className={`rounded-3xl border-[2.5px] border-[var(--edge)] bg-[var(--surface)] p-5 shadow-[0_4px_0_var(--edge)] sm:p-6 ${className}`}>
       {children}
     </section>
   )
@@ -12,7 +12,7 @@ export function SectionTitle({ step, title, hint }: { step?: number; title: stri
   return (
     <div className="mb-4 flex items-baseline gap-2">
       {step != null && (
-        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-night text-[12px] font-bold text-coin dark:bg-coin dark:text-night">{step}</span>
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-[var(--edge)] bg-coin text-[12px] font-bold text-white">{step}</span>
       )}
       <h2 className="text-[17px] font-bold">{title}</h2>
       {hint && <span className="text-[13px] text-[var(--ink-3)]">{hint}</span>}

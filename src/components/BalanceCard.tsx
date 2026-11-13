@@ -16,7 +16,7 @@ export function BalanceCard({ balance, target, onBalance, onTarget }: {
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="text-[13px] font-semibold text-[var(--ink-2)]">지금 가진 포인트</span>
-          <div className="mt-1.5 flex items-center rounded-2xl border border-[var(--line)] bg-[var(--surface-2)] px-4 focus-within:border-coin-deep">
+          <div className="mt-1.5 flex items-center rounded-2xl border-2 border-[var(--edge)] bg-[var(--surface-2)] px-4 focus-within:border-coin">
             <input inputMode="numeric" className="num w-full bg-transparent py-3 text-[26px] font-extrabold outline-none"
               value={balance ? fmt(balance) : ''} placeholder="0"
               onChange={(e) => onBalance(+e.target.value.replace(/[^\d]/g, '') || 0)} />
@@ -27,7 +27,7 @@ export function BalanceCard({ balance, target, onBalance, onTarget }: {
           <span className="text-[13px] font-semibold text-[var(--ink-2)]">
             목표 {balance > 0 && target > balance && <span className="text-win">(+{fmt(target - balance)})</span>}
           </span>
-          <div className="mt-1.5 flex items-center rounded-2xl border border-[var(--line)] bg-[var(--surface-2)] px-4 focus-within:border-coin-deep">
+          <div className="mt-1.5 flex items-center rounded-2xl border-2 border-[var(--edge)] bg-[var(--surface-2)] px-4 focus-within:border-coin">
             <input inputMode="numeric" className="num w-full bg-transparent py-3 text-[26px] font-extrabold outline-none"
               value={target ? fmt(target) : ''} placeholder="0"
               onChange={(e) => onTarget(+e.target.value.replace(/[^\d]/g, '') || 0)} />
@@ -40,9 +40,9 @@ export function BalanceCard({ balance, target, onBalance, onTarget }: {
           const on = Math.abs(mult - m) < 0.0005
           return (
             <button key={m} type="button" disabled={!balance} onClick={() => onTarget(Math.round(balance * m))}
-              className={`num rounded-full border px-3 py-1.5 text-[13px] font-bold transition disabled:opacity-40 ${on
-                ? 'border-night bg-night text-coin dark:border-coin dark:bg-coin dark:text-night'
-                : 'border-[var(--line)] text-[var(--ink-2)] hover:border-[var(--ink-3)]'}`}>
+              className={`num rounded-full border-2 px-3 py-1.5 text-[13px] font-bold transition disabled:opacity-40 ${on
+                ? 'border-[var(--edge)] bg-coin text-white'
+                : 'border-[var(--edge)] bg-[var(--surface)] text-[var(--ink)] hover:bg-[var(--surface-2)]'}`}>
               {multText(m)}
             </button>
           )

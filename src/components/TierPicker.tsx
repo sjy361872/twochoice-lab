@@ -141,7 +141,7 @@ export function TierPicker({ tiers, onChange, autoSelectAll }: {
                   <input value={fix[it.id] ?? ''} onChange={(e) => setFix({ ...fix, [it.id]: e.target.value })} inputMode="numeric" placeholder="받는 pt"
                     className="num w-24 rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-2 py-1 text-right font-bold outline-none focus:border-coin-deep" />
                   <button type="button" disabled={!t} onClick={() => t && !tiers.some((x) => sameTier(x, t)) && toggle(t)}
-                    className="rounded-lg bg-night px-2.5 py-1 text-[12.5px] font-bold text-white disabled:opacity-35 dark:bg-coin dark:text-night">추가</button>
+                    className="rounded-lg bg-night px-2.5 py-1 text-[12.5px] font-bold text-white disabled:opacity-35 dark:bg-coin dark:text-white">추가</button>
                 </li>
               )
             })}
@@ -160,10 +160,10 @@ function TierRow({ row, onToggle }: { row: Row; onToggle: () => void }) {
   const left = items.reduce((a, it) => a + (it.remaining ?? 0), 0)
   const total = items.reduce((a, it) => a + (it.quantity ?? 0), 0)
   return (
-    <li className={`overflow-hidden rounded-2xl border transition ${checked ? 'border-coin-deep bg-coin/10 dark:border-coin' : 'border-[var(--line)] hover:border-[var(--ink-3)]'}`}>
+    <li className={`overflow-hidden rounded-2xl border-2 transition ${checked ? 'border-coin bg-coin/10' : 'border-[var(--edge)] hover:bg-[var(--surface-2)]'}`}>
       <button type="button" onClick={onToggle} aria-pressed={checked} className="flex w-full items-center gap-3 px-3 pt-2.5 pb-1.5 text-left">
         <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 text-[12px] font-black ${checked
-          ? 'border-coin-deep bg-coin-deep text-white dark:border-coin dark:bg-coin dark:text-night' : 'border-[var(--line)]'}`} aria-hidden>
+          ? 'border-[var(--edge)] bg-coin text-white' : 'border-[var(--edge)]'}`} aria-hidden>
           {checked ? '✓' : ''}
         </span>
         <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
@@ -228,7 +228,7 @@ function ManualAdd({ tiers, manual, onChange }: { tiers: Tier[]; manual: Tier[];
             className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-2.5 py-2 text-[14px] font-bold outline-none">
             <option value="0.5">1/2</option><option value={String(1 / 1.9)}>1/1.9</option><option value={String(1 / 3)}>1/3</option><option value="0.25">1/4</option>
           </select></label>
-        <button type="button" onClick={addOne} className="rounded-xl bg-night px-4 py-2 text-[14px] font-bold text-white dark:bg-coin dark:text-night">추가</button>
+        <button type="button" onClick={addOne} className="rounded-xl bg-night px-4 py-2 text-[14px] font-bold text-white dark:bg-coin dark:text-white">추가</button>
       </div>
       {manual.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -245,7 +245,7 @@ function ManualAdd({ tiers, manual, onChange }: { tiers: Tier[]; manual: Tier[];
         <textarea value={paste} onChange={(e) => setPaste(e.target.value)} rows={3} placeholder={'300 540\n10000 17000 1/1.9'}
           className="num mt-2 w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] p-2 font-mono text-[13px] outline-none" />
         <div className="mt-1.5 flex gap-2">
-          <button type="button" onClick={() => { merge(parseTiers(paste).tiers); setPaste('') }} className="rounded-lg bg-night px-2.5 py-1 font-bold text-white dark:bg-coin dark:text-night">추가</button>
+          <button type="button" onClick={() => { merge(parseTiers(paste).tiers); setPaste('') }} className="rounded-lg bg-night px-2.5 py-1 font-bold text-white dark:bg-coin dark:text-white">추가</button>
           <button type="button" onClick={() => setPaste(SAMPLE_TABLE)} className="rounded-lg border border-[var(--line)] px-2.5 py-1 font-semibold text-[var(--ink-2)]">예시 채우기</button>
         </div>
       </details>
