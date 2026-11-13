@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { CalcResponse } from '../engine/sim.worker'
-import { fmt, oddsText, pct, signed } from '../lib/format'
+import { fmt, oddsText, pct } from '../lib/format'
 import { Card, SectionTitle } from './ui'
 
 /**
@@ -19,6 +19,12 @@ export function ResultPanel({ res, busy, balance, target, onBalance }: {
   return (
     <Card className={busy ? 'opacity-80 transition' : 'transition'}>
       <SectionTitle step={3} title="지금 누를 판" hint={busy ? '계산 중…' : undefined} />
+      {history.length > 0 && (
+        <button type="button" onClick={undo}
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[var(--line)] bg-[var(--surface-2)] py-3 text-[15px] font-extrabold text-[var(--ink)] transition hover:border-[var(--ink-3)] active:scale-[.99]">
+          ↶ 되돌리기 <span className="num text-[13px] font-semibold text-[var(--ink-3)]">({fmt(history[history.length - 1])}pt로)</span>
+        </button>
+      )}
 
       {reached ? (
         <div className="rounded-2xl bg-emerald-50 p-5 text-center dark:bg-emerald-500/10">
@@ -27,7 +33,6 @@ export function ResultPanel({ res, busy, balance, target, onBalance }: {
             <b className="num text-[var(--ink)]">{fmt(balance)}pt</b>. 계산대로라면 <b className="text-[var(--ink)]">여기서 멈추는 게 맞다</b>.
             더 하면 평균은 다시 줄어든다.
           </p>
-          {history.length > 0 && <Undo onClick={undo} />}
         </div>
       ) : !ready || target <= balance ? (
         <p className="text-[14px] text-[var(--ink-3)]">포인트, 목표(지금보다 크게), 판을 하나 이상 넣으면 여기 결과가 나온다.</p>
@@ -35,23 +40,20 @@ export function ResultPanel({ res, busy, balance, target, onBalance }: {
         <div className="rounded-2xl bg-rose-50 p-4 text-[14px] text-lose dark:bg-rose-500/10">
           <b>지금 잔고로 걸 수 있는 판이 없다.</b>
           <span className="mt-1 block text-[13px] text-[var(--ink-2)]">한 판 상한(기본: 잔고의 50%)이나 전재산 금지 규칙 때문일 수 있다 — 아래 세부 설정.</span>
-          {history.length > 0 && <Undo onClick={undo} />}
         </div>
       ) : (
-        <Main res={res} busy={busy} balance={balance} target={target} onPlay={play} onUndo={history.length ? undo : null} />
+        <Main res={res} busy={busy} balance={balance} target={target} onPlay={play} />
       )}
 
-      {ready && target > balance && res.perTier.length > 1 && <Compare res={res} />}
     </Card>
   )
 }
 
-function Main({ res, busy, balance, target, onPlay, onUndo }: {
-  res: CalcResponse; busy: boolean; balance: number; target: number; onPlay: (v: number) => void; onUndo: (() => void) | null
+function Main({ res, busy, balance, target, onPlay }: {
+  res: CalcResponse; busy: boolean; balance: number; target: number; onPlay: (v: number) => void
 }) {
   const t = res.best.tier!
   const win = res.best.reach
-  const avg = res.expected - balance
   return (
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -76,17 +78,10 @@ function Main({ res, busy, balance, target, onPlay, onUndo }: {
           <div className="text-[12.5px] text-[var(--ink-2)]">실패하면 약 <b className="num text-lose">−{fmt(balance)}</b></div>
         </div>
       </div>
-      <p className="mt-3 rounded-xl bg-[var(--surface-2)] px-3 py-2 text-[12.5px] text-[var(--ink-2)]">
-        추천대로 끝까지 했을 때의 확률이다. 평균으로 보면 <b className={`num ${avg < 0 ? 'text-lose' : 'text-win'}`}>{signed(avg)}pt</b>
-        {avg < 0 && ' — 오래 할수록 줄어드는 게임이다.'}
-      </p>
 
       {/* 실제로 눌러본 결과를 넣으면 잔고가 바뀌고 다음 판이 다시 계산된다 */}
       <div className="mt-4">
-        <div className="mb-2 flex items-center justify-between text-[12.5px] font-semibold text-[var(--ink-3)]">
-          <span>눌러봤으면 결과를 알려줘 → 다음 판 계산</span>
-          {onUndo && <button type="button" onClick={onUndo} className="hover:text-[var(--ink)]">↶ 되돌리기</button>}
-        </div>
+        <div className="mb-2 text-[12.5px] font-semibold text-[var(--ink-3)]">눌러봤으면 결과를 알려줘 → 다음 판 계산</div>
         <div className="grid grid-cols-2 gap-2">
           <button type="button" disabled={busy} onClick={() => onPlay(balance + t.profit)}
             className="rounded-2xl bg-win px-3 py-3 text-[15px] font-extrabold text-white transition active:scale-[.98] disabled:opacity-50">
@@ -99,36 +94,5 @@ function Main({ res, busy, balance, target, onPlay, onUndo }: {
         </div>
       </div>
     </>
-  )
-}
-
-function Undo({ onClick }: { onClick: () => void }) {
-  return <button type="button" onClick={onClick} className="mt-3 text-[12.5px] font-semibold text-[var(--ink-3)] hover:text-[var(--ink)]">↶ 마지막 결과 되돌리기</button>
-}
-
-/** 판마다 '이 판 하나만 계속 누르면' — 궁금한 사람만 펼쳐 본다 */
-function Compare({ res }: { res: CalcResponse }) {
-  const rows = res.perTier.slice().sort((a, b) => (b.reach ?? -1) - (a.reach ?? -1))
-  const top = rows[0]?.reach ?? 0
-  return (
-    <details className="mt-5 border-t border-[var(--line)] pt-4">
-      <summary className="cursor-pointer text-[13px] font-semibold text-[var(--ink-2)]">
-        다른 판과 비교 <span className="font-normal text-[var(--ink-3)]">— 한 판만 계속 누르면 몇 %?</span>
-      </summary>
-      <ul className="mt-3 grid gap-1">
-        {rows.map(({ tier, reach, approx }) => (
-          <li key={`${tier.cost}/${tier.payout}/${tier.p}`} className="flex items-center gap-2 text-[13px]">
-            <span className="num w-[7.5rem] shrink-0 font-bold">{fmt(tier.cost)}→{fmt(tier.payout)}</span>
-            <span className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--surface-2)]">
-              {reach != null && <span className="block h-full rounded-full bg-coin" style={{ width: `${(reach / Math.max(top, 1e-9)) * 100}%` }} />}
-            </span>
-            <span className="num w-14 shrink-0 text-right font-bold">
-              {reach == null ? <span className="text-[11px] text-[var(--ink-3)]">못 걸음</span> : <>{approx && <span className="text-[10px] text-[var(--ink-3)]">약 </span>}{pct(reach, 0)}</>}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-2 text-[11.5px] text-[var(--ink-3)]">위의 추천은 잔고에 따라 판을 바꿔 가므로 어느 한 판만 누르는 것보다 높거나 같다. "약"은 근사식 값(시뮬레이션과 3%p 이내).</p>
-    </details>
   )
 }
