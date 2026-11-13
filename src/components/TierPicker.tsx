@@ -160,23 +160,15 @@ function TierRow({ row, onToggle }: { row: Row; onToggle: () => void }) {
   const left = items.reduce((a, it) => a + (it.remaining ?? 0), 0)
   const total = items.reduce((a, it) => a + (it.quantity ?? 0), 0)
   return (
-    <li>
-      <button type="button" onClick={onToggle} aria-pressed={checked}
-        className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition ${checked
-          ? 'border-coin-deep bg-coin/10 dark:border-coin'
-          : 'border-[var(--line)] hover:border-[var(--ink-3)]'}`}>
+    <li className={`overflow-hidden rounded-2xl border transition ${checked ? 'border-coin-deep bg-coin/10 dark:border-coin' : 'border-[var(--line)] hover:border-[var(--ink-3)]'}`}>
+      <button type="button" onClick={onToggle} aria-pressed={checked} className="flex w-full items-center gap-3 px-3 pt-2.5 pb-1.5 text-left">
         <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 text-[12px] font-black ${checked
           ? 'border-coin-deep bg-coin-deep text-white dark:border-coin dark:bg-coin dark:text-night' : 'border-[var(--line)]'}`} aria-hidden>
           {checked ? '✓' : ''}
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="flex flex-wrap items-baseline gap-x-2">
-            <span className="num text-[16px] font-extrabold whitespace-nowrap">{fmt(t.cost)} <span className="text-[var(--ink-3)]">→</span> {fmt(t.payout)}</span>
-            <span className="text-[12px] font-semibold text-[var(--ink-3)]">{oddsText(t.p)}</span>
-          </span>
-          <span className="mt-0.5 block truncate text-[12px] text-[var(--ink-3)]">
-            {items[0].name}{items.length > 1 && ` 외 ${items.length - 1}개`}
-          </span>
+        <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
+          <span className="num text-[16px] font-extrabold whitespace-nowrap">{fmt(t.cost)} <span className="text-[var(--ink-3)]">→</span> {fmt(t.payout)}</span>
+          <span className="text-[12px] font-semibold text-[var(--ink-3)]">{oddsText(t.p)}</span>
         </span>
         <span className="flex shrink-0 flex-col items-end gap-1">
           <Badge tone={rtp >= 0.9 ? 'neutral' : 'lose'}>환원 {pct(rtp, 0)}</Badge>
@@ -191,6 +183,16 @@ function TierRow({ row, onToggle }: { row: Row; onToggle: () => void }) {
           )}
         </span>
       </button>
+      {/* 가챠 페이지로 가는 링크 — 선택 버튼과 분리해서, 눌러도 선택이 바뀌지 않게 */}
+      <div className="flex flex-wrap gap-1.5 px-3 pb-2.5 pl-11">
+        {items.map((it) => (
+          <a key={it.id} href={it.url} target="_blank" rel="noopener"
+            className="inline-flex max-w-full items-center gap-1 rounded-lg bg-[var(--surface-2)] px-2 py-1 text-[12px] font-semibold text-[var(--ink-2)] transition hover:bg-[var(--line)] hover:text-[var(--ink)]">
+            <span className="truncate">{it.name}</span>
+            <span aria-hidden className="shrink-0">↗</span>
+          </a>
+        ))}
+      </div>
     </li>
   )
 }

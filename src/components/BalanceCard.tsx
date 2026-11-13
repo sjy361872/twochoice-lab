@@ -1,7 +1,10 @@
 import { fmt } from '../lib/format'
 import { Card, SectionTitle } from './ui'
 
-const MULTS = [1.01, 1.03, 1.05, 1.1, 1.2, 1.5]
+const MULTS = [1.01, 1.03, 1.05, 1.1, 1.2, 1.5, 2, 3]
+const MAX_MULT = 3
+/** ×1.5 · ×2 처럼 쓸데없는 0 없이 (예전엔 ×1.50 · ×1.10 으로 보였다) */
+const multText = (m: number) => `×${+m.toFixed(2)}`
 
 export function BalanceCard({ balance, target, onBalance, onTarget }: {
   balance: number; target: number; onBalance: (v: number) => void; onTarget: (v: number) => void
@@ -40,14 +43,17 @@ export function BalanceCard({ balance, target, onBalance, onTarget }: {
               className={`num rounded-full border px-3 py-1.5 text-[13px] font-bold transition disabled:opacity-40 ${on
                 ? 'border-night bg-night text-coin dark:border-coin dark:bg-coin dark:text-night'
                 : 'border-[var(--line)] text-[var(--ink-2)] hover:border-[var(--ink-3)]'}`}>
-              ×{m.toFixed(2)}
+              {multText(m)}
             </button>
           )
         })}
       </div>
       {balance > 0 && (
-        <input type="range" min={1.01} max={1.5} step={0.01} value={Math.min(1.5, Math.max(1.01, mult))}
-          onChange={(e) => onTarget(Math.round(balance * +e.target.value))} className="mt-4 w-full" aria-label="목표 배수" />
+        <div className="mt-4 flex items-center gap-3">
+          <input type="range" min={1.01} max={MAX_MULT} step={0.01} value={Math.min(MAX_MULT, Math.max(1.01, mult))}
+            onChange={(e) => onTarget(Math.round(balance * +e.target.value))} className="w-full" aria-label="목표 배수" />
+          <span className="num w-12 shrink-0 text-right text-[14px] font-bold text-[var(--ink-2)]">{multText(mult)}</span>
+        </div>
       )}
     </Card>
   )
