@@ -6,8 +6,8 @@ export function Header() {
       <div className="flex items-center gap-3">
         <Coin />
         <div>
-          <div className="text-[19px] font-extrabold tracking-tight">둘중하나 연구소</div>
-          <div className="text-[12.5px] text-[var(--ink-3)]">반반 게임, 감 말고 숫자로</div>
+          <div className="text-[19px] font-extrabold tracking-tight">니부이치 계산기</div>
+          <div className="text-[12.5px] text-[var(--ink-3)]">제작자 파도(sjy361872)</div>
         </div>
       </div>
       {DONATE_URL && (

@@ -80,8 +80,7 @@ function Main({ res, busy, balance, target, onPlay }: {
       </div>
 
       {/* 실제로 눌러본 결과를 넣으면 잔고가 바뀌고 다음 판이 다시 계산된다 */}
-      <div className="mt-4">
-        <div className="mb-2 text-[12.5px] font-semibold text-[var(--ink-3)]">눌러봤으면 결과를 알려줘 → 다음 판 계산</div>
+      <div className="mt-5">
         <div className="grid grid-cols-2 gap-2">
           <button type="button" disabled={busy} onClick={() => onPlay(balance + t.profit)}
             className="rounded-2xl bg-win px-3 py-3 text-[15px] font-extrabold text-white transition active:scale-[.98] disabled:opacity-50">
