@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>기법 비교 목업</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  :root { --red: #e3350d; --edge: #1a1a1a; --s2: #f3efe7; --ink2: #55575f; --ink3: #8c90a0; --win: #1e9c5f; }
+  body { font-family: "Pretendard Variable", Pretendard, system-ui, sans-serif; background: #e9e6df; color: #1a1a1a; padding: 24px 16px 48px; }
+  h1 { font-size: 20px; text-align: center; }
+  .sub { text-align: center; color: #666; font-size: 13px; margin: 6px auto 22px; max-width: 760px; line-height: 1.6; }
+  .wrap { display: flex; flex-wrap: wrap; gap: 26px; justify-content: center; align-items: flex-start; }
+  .col { width: 380px; max-width: 100%; }
+  .label { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+  .desc { font-size: 12.5px; color: #555; margin-bottom: 10px; line-height: 1.55; }
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .card { background: #fff; border: 2.5px solid var(--edge); box-shadow: 0 4px 0 var(--edge); border-radius: 24px; padding: 16px; }
+  .step { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; margin-bottom: 4px; }
+  .step i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; background: var(--red); color: #fff; border: 2px solid var(--edge); }
+  .q { font-size: 12.5px; color: var(--ink3); margin-bottom: 12px; }
+  .lose { color: var(--red); } .win { color: var(--win); }
+  .muted { color: var(--ink3); }
+
+  /* S1 순위 카드 */
+  .rank { display: grid; gap: 8px; }
+  .rk { display: flex; gap: 10px; align-items: center; border: 2px solid var(--edge); border-radius: 16px; padding: 10px 12px; }
+  .rk.best { border-color: var(--red); background: #fff4f0; }
+  .rk .no { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 13px; background: var(--s2); flex-shrink: 0; }
+  .rk.best .no { background: var(--red); color: #fff; }
+  .rk .nm { font-weight: 800; font-size: 14px; }
+  .rk .ex { font-size: 11.5px; color: var(--ink2); margin-top: 1px; }
+  .rk .pc { margin-left: auto; text-align: right; }
+  .rk .pc b { font-size: 22px; font-weight: 900; display: block; line-height: 1; }
+  .rk .pc small { font-size: 11px; }
+
+  /* S2 100명 그림 */
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .tab { border: 2px solid var(--edge); border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; }
+  .tab.on { background: var(--red); color: #fff; }
+  .dots { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; margin: 8px 0 10px; }
+  .dot { aspect-ratio: 1; border-radius: 50%; background: #f1b4a6; }
+  .dot.ok { background: var(--win); }
+  .big { font-size: 15px; font-weight: 700; line-height: 1.5; }
+  .big b { font-size: 26px; font-weight: 900; }
+  .vs { margin-top: 10px; background: var(--s2); border-radius: 12px; padding: 8px 10px; font-size: 12.5px; color: var(--ink2); }
+
+  /* S3 가로 막대 대결 */
+  .bars { display: grid; gap: 10px; }
+  .br .top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .br .track { height: 22px; background: var(--s2); border-radius: 8px; overflow: hidden; border: 1.5px solid var(--edge); }
+  .br .fill { height: 100%; background: #c9c3b6; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-size: 12px; font-weight: 800; color: #1a1a1a; }
+  .br.best .fill { background: var(--red); color: #fff; }
+  .br .loss { font-size: 11.5px; color: var(--ink3); margin-top: 2px; }
+
+  /* S4 한 줄 결론 + 펼치기 */
+  .verdict { border: 2px solid var(--red); background: #fff4f0; border-radius: 16px; padding: 14px; }
+  .verdict .h { font-size: 13px; font-weight: 700; color: var(--red); }
+  .verdict .t { font-size: 19px; font-weight: 900; margin: 4px 0 6px; line-height: 1.35; }
+  .verdict .s { font-size: 12.5px; color: var(--ink2); line-height: 1.55; }
+  .mini { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 12px; font-size: 13px; margin-top: 12px; align-items: center; }
+  .mini .h2 { font-size: 11px; color: var(--ink3); font-weight: 700; }
+  details { margin-top: 12px; border-top: 1.5px solid var(--s2); padding-top: 10px; font-size: 12.5px; color: var(--ink2); }
+  summary { font-weight: 700; cursor: pointer; color: #1a1a1a; }
+  details p { margin-top: 6px; line-height: 1.55; }
+</style>
+</head>
+<body>
+<h1>4번 베팅 기법 비교 · 목업 4가지</h1>
+<p class="sub">예시: <b>1만 → 1.2만</b>, 지금 열린 니부이치 20종, 기본 판 1,000pt. 숫자는 실제로 8,000번씩 돌린 결과다.<br>
+어려운 말(전멸·판수·중앙값)은 빼고 <b>"100번 하면 몇 번 성공하나"</b>와 <b>"평균 얼마 잃나"</b> 두 가지만 남겼다. '기본 판'·'판 수 제한' 같은 설정은 세부 설정으로 옮긴다.</p>
+
+<div class="wrap">
+  <div class="col"><div class="label">S1. 순위 카드</div><div class="desc">1등부터 줄 세우고, 기법 이름 밑에 한 줄 설명. "무슨 뜻인지"와 "얼마나 좋은지"가 한 줄에. 추천.</div>
+    <div class="card"><div class="step"><i>4</i>다른 방법이랑 비교하면?</div><div class="q">같은 조건으로 8,000번씩 해본 결과</div><div class="rank" id="s1"></div>
+      <p class="q" style="margin:10px 0 0">켈리 공식: 이 게임은 평균적으로 손해라서 <b>"걸지 마라"</b>가 답이다.</p></div></div>
+
+  <div class="col"><div class="label">S2. 100명 그림</div><div class="desc">방법을 누르면 "100명이 이렇게 하면 몇 명이 성공하나"를 점 100개로. 확률을 제일 직관적으로 느끼게 한다.</div>
+    <div class="card"><div class="step"><i>4</i>100명이 이 방법으로 하면</div><div class="q">방법을 눌러 바꿔보기</div>
+      <div class="tabs" id="s2tabs"></div><div id="s2"></div></div></div>
+
+  <div class="col"><div class="label">S3. 가로 막대 대결</div><div class="desc">막대 길이 = 성공 확률. 밑에 평균 손해. 한눈에 "누가 제일 긴가"만 보면 된다.</div>
+    <div class="card"><div class="step"><i>4</i>방법별 성공 확률</div><div class="q">막대가 길수록 목표에 잘 닿는다</div><div class="bars" id="s3"></div></div></div>
+
+  <div class="col"><div class="label">S4. 결론 한 줄 + 자세히</div><div class="desc">가장 짧다. 결론만 크게, 비교는 작은 표 3줄, 기법 설명은 접어둔다.</div>
+    <div class="card"><div class="step"><i>4</i>다른 방법이랑 비교하면?</div>
+      <div class="verdict"><div class="h">결론</div><div class="t">계산기 추천대로가 제일 낫다</div>
+        <div class="s">유명한 베팅법(마틴게일 등)보다 성공은 <b>7~20%p 더 자주</b>, 손해는 <b>더 적다</b>. 그래도 평균은 마이너스다.</div></div>
+      <div class="mini" id="s4"></div>
+      <details><summary>각 방법이 뭔데?</summary><div id="s4ex"></div></details></div></div>
+</div>
+
+<script>
+const R = [
+  { id: 'optimal', nm: '계산기 추천대로', ex: '매번 목표에 가장 잘 닿는 판을 고른다', reach: 72.5, pnl: -1244 },
+  { id: 'dalembert', nm: '달랑베르', ex: '지면 한 칸 큰 판, 이기면 한 칸 작은 판', reach: 65.9, pnl: -1846 },
+  { id: 'martingale', nm: '마틴게일', ex: '지면 잃은 만큼 한 번에 메우는 판으로 키운다', reach: 63.6, pnl: -1572 },
+  { id: 'paroli', nm: '파롤리', ex: '이기면 한 칸 키우고, 지면 처음 판으로', reach: 60.8, pnl: -2087 },
+  { id: 'fixed', nm: '같은 판만 계속', ex: '1,000pt 판만 계속 누른다', reach: 52.8, pnl: -2838 },
+]
+const f = (n) => (n < 0 ? '−' : '+') + Math.abs(n).toLocaleString('ko-KR')
+
+document.getElementById('s1').innerHTML = R.map((r, i) => `<div class="rk ${i ? '' : 'best'}"><span class="no">${i + 1}</span><div><div class="nm">${r.nm}</div><div class="ex">${r.ex}</div></div>
+  <div class="pc"><b class="num ${i ? '' : 'lose'}" style="${i ? '' : 'color:var(--red)'}">${Math.round(r.reach)}%</b><small class="muted num">평균 ${f(r.pnl)}pt</small></div></div>`).join('')
+
+let cur = 0
+const s2 = () => {
+  const r = R[cur], n = Math.round(r.reach)
+  document.getElementById('s2tabs').innerHTML = R.map((x, i) => `<span class="tab ${i === cur ? 'on' : ''}" onclick="cur=${i};s2()">${x.nm}</span>`).join('')
+  document.getElementById('s2').innerHTML = `<div class="big"><b class="win num">${n}명</b> 성공 · <b class="lose num">${100 - n}명</b> 실패</div>
+    <div class="dots">${Array.from({ length: 100 }, (_, i) => `<span class="dot ${i < n ? 'ok' : ''}"></span>`).join('')}</div>
+    <div class="muted" style="font-size:12.5px">평균으로 보면 1명당 <b class="lose num">${f(r.pnl)}pt</b></div>
+    ${cur ? `<div class="vs">계산기 추천대로 하면 <b>${Math.round(R[0].reach)}명</b> 성공 — 이 방법보다 <b>${Math.round(R[0].reach) - n}명 더</b></div>` : `<div class="vs">이 방법이 제일 많이 성공한다. 그래도 <b>${100 - n}명</b>은 거의 다 잃는다.</div>`}`
+}
+s2()
+
+document.getElementById('s3').innerHTML = R.map((r, i) => `<div class="br ${i ? '' : 'best'}"><div class="top"><span>${r.nm}${i ? '' : ' 👑'}</span></div>
+  <div class="track"><div class="fill num" style="width:${r.reach}%">${Math.round(r.reach)}%</div></div><div class="loss num">평균 ${f(r.pnl)}pt</div></div>`).join('')
+
+document.getElementById('s4').innerHTML = `<span class="h2">방법</span><span class="h2" style="text-align:right">성공</span><span class="h2" style="text-align:right">평균</span>` +
+  R.slice(0, 3).concat([R[4]]).map((r, i) => `<b style="${i ? 'font-weight:600' : ''}">${r.nm}</b><b class="num" style="text-align:right;${i ? '' : 'color:var(--red)'}">${Math.round(r.reach)}%</b><span class="num lose" style="text-align:right">${f(r.pnl)}</span>`).join('')
+document.getElementById('s4ex').innerHTML = R.map((r) => `<p><b>${r.nm}</b> — ${r.ex}</p>`).join('') + `<p><b>켈리 공식</b> — 이길 확률이 유리할 때만 건다. 이 게임은 평균 손해라 "걸지 마라".</p>`
+</script>
+</body>
+</html>
