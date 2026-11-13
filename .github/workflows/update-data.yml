@@ -35,7 +35,7 @@ jobs:
           cp public/data/nibuichi.json /tmp/nibuichi.json
           git config user.name "twochoice-bot"
           git config user.email "actions@users.noreply.github.com"
-          if git rev-parse --verify -q origin/data >/dev/null; then git checkout -B data origin/data; else git checkout --orphan data && git rm -rfq .; fi
+          if git rev-parse --verify -q origin/data >/dev/null; then git checkout -f -B data origin/data; else git checkout --orphan data && git rm -rfq .; fi
           cp /tmp/nibuichi.json nibuichi.json
           git add nibuichi.json
           git diff --cached --quiet || (git commit -qm "data: $(date -u +%FT%TZ)" && git push -q origin data)
