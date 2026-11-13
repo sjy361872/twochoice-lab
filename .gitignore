@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 tests/e2e/*.png
 .cache/
+__pycache__/
+.env.local
