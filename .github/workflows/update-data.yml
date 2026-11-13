@@ -1,10 +1,10 @@
 name: "'둘 중 하나' 목록 갱신"
-# 매시 0분·30분 클로브 목록(요청 약 6번)을 읽고, 결과 JSON 만 data 브랜치에 올린다.
+# 매시 15분·45분 클로브 목록(요청 약 6번)을 읽고, 결과 JSON 만 data 브랜치에 올린다.
 # 사이트는 VITE_DATA_URL(= raw.githubusercontent.com/<owner>/<repo>/data/nibuichi.json)에서 바로 읽으므로
 # 코드 브랜치에 데이터 커밋이 쌓이지 않고 사이트 재배포도 일어나지 않는다.
 on:
   schedule:
-    - cron: '0,30 * * * *'   # 매시 0분·30분 (GitHub 사정으로 몇 분 늦을 수 있음)
+    - cron: '15,45 * * * *'   # 매시 15분·45분 (정각은 GitHub 이 붐벼서 늦어짐)
   workflow_dispatch: {}
 permissions:
   contents: write
