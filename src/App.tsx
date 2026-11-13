@@ -43,7 +43,7 @@ export default function App() {
           반반 확률 게임에서 <b className="text-[var(--ink)]">어떤 판을 눌러야 목표에 가장 잘 닿는지</b>, 그리고 <b className="text-[var(--ink)]">실패하면 얼마를 잃는지</b>를 같이 보여준다.
         </p>
         <BalanceCard balance={balance} target={target} onBalance={setBalance} onTarget={setTarget} />
-        <TierPicker tiers={tiers} onChange={setTiers} />
+        <TierPicker tiers={tiers} onChange={setTiers} autoSelectAll={s0.tiers === undefined} />
         <ResultPanel res={calc.res} busy={calc.busy} balance={balance} target={target} />
         <StrategyCompare res={sim.res} busy={sim.busy} tiers={tiers} base={base}
           onBase={(t) => setBaseCost(t.cost)} roundLimit={roundLimit} onRoundLimit={setRoundLimit}
