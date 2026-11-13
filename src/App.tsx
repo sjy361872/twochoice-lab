@@ -44,7 +44,7 @@ export default function App() {
         </p>
         <BalanceCard balance={balance} target={target} onBalance={setBalance} onTarget={setTarget} />
         <TierPicker tiers={tiers} onChange={setTiers} autoSelectAll={s0.tiers === undefined} />
-        <ResultPanel res={calc.res} busy={calc.busy} balance={balance} target={target} />
+        <ResultPanel res={calc.res} busy={calc.busy} balance={balance} target={target} onBalance={setBalance} />
         <StrategyCompare res={sim.res} busy={sim.busy} tiers={tiers} base={base}
           onBase={(t) => setBaseCost(t.cost)} roundLimit={roundLimit} onRoundLimit={setRoundLimit}
           balance={balance} target={target} />
