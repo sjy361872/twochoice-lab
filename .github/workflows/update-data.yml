@@ -26,7 +26,7 @@ jobs:
       - name: 이전 결과 불러오기 (이미 읽은 가챠는 OCR 생략)
         run: |
           git fetch origin data --depth=1 || true
-          git show origin/data:nibuichi.json > public/data/nibuichi.json 2>/dev/null || true
+          git show origin/data:nibuichi.json > /tmp/prev.json 2>/dev/null && mv /tmp/prev.json public/data/nibuichi.json || true
       - run: python scripts/fetch_nibuichi.py
       - name: data 브랜치에 올리기 (바뀐 경우만)
         run: |

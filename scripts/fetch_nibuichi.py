@@ -146,7 +146,10 @@ def main():
     print(f"'둘 중 하나' {len(nibu)}개 · API 요청 {requests_made}번")
     prev = {}
     if OUT.exists() and not reocr:
-        prev = {x["id"]: x for x in json.loads(OUT.read_text(encoding="utf-8")).get("items", [])}
+        try:   # 이전 결과가 없거나 깨졌으면 처음부터 (OCR 캐시만 못 쓸 뿐 결과는 같다)
+            prev = {x["id"]: x for x in json.loads(OUT.read_text(encoding="utf-8")).get("items", [])}
+        except (OSError, ValueError):
+            prev = {}
     ocr = None
     CACHE.mkdir(parents=True, exist_ok=True)
     items = []
