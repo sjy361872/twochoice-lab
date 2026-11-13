@@ -43,7 +43,7 @@ export default function App() {
           반반 확률 게임에서 <b className="text-[var(--ink)]">어떤 판을 눌러야 목표에 가장 잘 닿는지</b>, 그리고 <b className="text-[var(--ink)]">실패하면 얼마를 잃는지</b>를 같이 보여준다.
         </p>
         <BalanceCard balance={balance} target={target} onBalance={setBalance} onTarget={setTarget} />
-        <TierPicker tiers={tiers} onChange={setTiers} autoSelectAll={s0.tiers === undefined} />
+        <TierPicker tiers={tiers} onChange={setTiers} autoSelectAll={s0.tiers === undefined} balance={balance} capFrac={capFrac} />
         <ResultPanel res={calc.res} busy={calc.busy} balance={balance} target={target} onBalance={setBalance} />
         <StrategyCompare res={sim.res} busy={sim.busy} tiers={tiers} base={base}
           onBase={(t) => setBaseCost(t.cost)} roundLimit={roundLimit} onRoundLimit={setRoundLimit}
@@ -54,7 +54,7 @@ export default function App() {
             <summary className="cursor-pointer text-[15px] font-bold">세부 설정</summary>
             <div className="mt-4 grid gap-5">
               <div>
-                <div className="mb-2 text-[13px] font-semibold text-[var(--ink-2)]">한 판에 걸 수 있는 최대 비중 <span className="font-normal text-[var(--ink-3)]">(전재산은 항상 금지)</span></div>
+                <div id="cap-setting" className="mb-2 text-[13px] font-semibold text-[var(--ink-2)]">한 판에 걸 수 있는 최대 비중 <span className="font-normal text-[var(--ink-3)]">(전재산은 항상 금지 · 늘리면 2번에서 못 거는 판이 줄어든다)</span></div>
                 <Seg value={capFrac} onChange={setCapFrac} options={[{ v: 0.3, label: '30%' }, { v: 0.5, label: '50% (기본)' }, { v: 0.8, label: '80%' }, { v: 1, label: '제한 없음' }]} />
                 <p className="mt-2 text-[12px] text-[var(--ink-3)]">상한을 풀면 도달 확률은 조금 오르지만, 한 판에 크게 잃을 수 있다.</p>
               </div>

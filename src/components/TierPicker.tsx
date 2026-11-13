@@ -30,9 +30,10 @@ const RANGES = [
   { v: 'l', label: '1만~', ok: (c: number) => c >= 10000 },
 ] as const
 
-export function TierPicker({ tiers, onChange, autoSelectAll }: {
-  tiers: Tier[]; onChange: (t: Tier[]) => void; autoSelectAll: boolean
+export function TierPicker({ tiers, onChange, autoSelectAll, balance, capFrac }: {
+  tiers: Tier[]; onChange: (t: Tier[]) => void; autoSelectAll: boolean; balance: number; capFrac: number
 }) {
+  const [showLocked, setShowLocked] = useState(false)
   const [auto, setAuto] = useState<AutoData | null>(null)
   const [range, setRange] = useState<(typeof RANGES)[number]['v']>('all')
   const [q, setQ] = useState('')
@@ -71,11 +72,18 @@ export function TierPicker({ tiers, onChange, autoSelectAll }: {
   const qq = q.trim().toLowerCase()
   const hit = (it: AutoItem) => !qq || it.name.toLowerCase().includes(qq) || (it.title_ko ?? '').toLowerCase().includes(qq) || String(it.price).startsWith(qq.replace(/[^\d]/g, '') || '§')
   const shown = rows.filter((r) => okRange(r.tier.cost) && r.items.some(hit))
+  // 지금 잔고로 걸 수 있나 — 계산 엔진과 같은 규칙: 전재산 금지 + 한 판 상한(기본 잔고의 50%)
+  const canBet = (t: Tier) => t.cost < balance && (capFrac >= 1 || t.cost <= balance * capFrac + 1e-9)
+  const needBal = (t: Tier) => (capFrac >= 1 ? t.cost + 1 : Math.ceil(t.cost / capFrac))
+  const okRows = shown.filter((r) => canBet(r.tier))
+  const lockedRows = shown.filter((r) => !canBet(r.tier))
+  const visible = showLocked ? shown : okRows
+  const usable = tiers.filter(canBet).length
   const manual = tiers.filter((t) => !rows.some((r) => sameTier(r.tier, t)))
   const setAll = (on: boolean) => {
-    const keys = new Set(shown.map((r) => r.key))
+    const keys = new Set(visible.map((r) => r.key))
     const rest = tiers.filter((t) => !keys.has(keyOf(t)))
-    onChange((on ? [...rest, ...shown.map((r) => r.tier)] : rest).sort((a, b) => a.cost - b.cost))
+    onChange((on ? [...rest, ...visible.map((r) => r.tier)] : rest).sort((a, b) => a.cost - b.cost))
   }
 
   const fetched = auto?.fetchedAt ? new Date(auto.fetchedAt) : null
@@ -112,22 +120,36 @@ export function TierPicker({ tiers, onChange, autoSelectAll }: {
               className="min-w-0 flex-1 rounded-xl border border-[var(--line)] bg-[var(--surface-2)] px-3 py-1.5 text-[13.5px] outline-none focus:border-coin-deep" />
           </div>
 
-          <div className="mb-2 flex items-center justify-between text-[12.5px]">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[12.5px]">
             <span className="text-[var(--ink-3)]">
               고른 판 <b className="num text-[var(--ink)]">{tiers.length}</b>개
+              {usable < tiers.length && <> · 지금 걸 수 있는 건 <b className="num text-[var(--ink)]">{usable}</b>개</>}
             </span>
-            <span className="flex gap-3 font-semibold">
-              <button type="button" onClick={() => setAll(true)} className="text-coin-deep hover:underline dark:text-coin">보이는 것 모두 고르기</button>
+            <span className="flex shrink-0 gap-3 font-semibold whitespace-nowrap">
+              <button type="button" onClick={() => setAll(true)} className="text-coin-deep hover:underline dark:text-coin">모두 고르기</button>
               <button type="button" onClick={() => setAll(false)} className="text-[var(--ink-3)] hover:text-lose">해제</button>
             </span>
           </div>
 
           <ul className="grid max-h-[520px] grid-cols-[minmax(0,1fr)] gap-1.5 overflow-y-auto pr-1">
             {/* 화면은 가챠 한 줄씩(그림·남은 수량이 가챠마다 다르다), 선택은 배당 단위(같은 배당이면 계산상 같은 판) */}
-            {shown.flatMap((r) => r.items.filter(hit).map((it) => (
+            {okRows.flatMap((r) => r.items.filter(hit).map((it) => (
               <GachaRow key={it.id} it={it} tier={r.tier} checked={r.checked} twins={r.items.length - 1} onToggle={() => toggle(r.tier)} />
             )))}
-            {!shown.length && <li className="py-6 text-center text-[13px] text-[var(--ink-3)]">조건에 맞는 판이 없다</li>}
+            {!okRows.length && <li className="py-4 text-center text-[13px] text-[var(--ink-3)]">{shown.length ? '지금 잔고로 걸 수 있는 판이 없다' : '조건에 맞는 판이 없다'}</li>}
+            {lockedRows.length > 0 && (
+              <li>
+                <button type="button" onClick={() => setShowLocked(!showLocked)}
+                  className="flex w-full items-center justify-between gap-2 rounded-2xl border-2 border-dashed border-[var(--line)] px-3 py-2.5 text-left text-[13px] font-semibold text-[var(--ink-2)] hover:bg-[var(--surface-2)]">
+                  <span>🔒 지금 잔고로 못 거는 판 <b className="num">{lockedRows.reduce((a, r) => a + r.items.filter(hit).length, 0)}개</b>
+                    <span className="block text-[11.5px] font-normal text-[var(--ink-3)]">한 판 최대 <b className="num">{fmt(capFrac >= 1 ? balance - 1 : balance * capFrac)}pt</b> (잔고의 {capFrac >= 1 ? '100% 미만' : `${Math.round(capFrac * 100)}%`}) — 골라두면 잔고가 늘었을 때 계산에 들어간다</span></span>
+                  <span className="shrink-0 text-[12px]">{showLocked ? '접기 ▲' : '보기 ▼'}</span>
+                </button>
+              </li>
+            )}
+            {showLocked && lockedRows.flatMap((r) => r.items.filter(hit).map((it) => (
+              <GachaRow key={it.id} it={it} tier={r.tier} checked={r.checked} twins={r.items.length - 1} onToggle={() => toggle(r.tier)} lockedFrom={needBal(r.tier)} />
+            )))}
           </ul>
         </>
       )}
@@ -161,8 +183,8 @@ export function TierPicker({ tiers, onChange, autoSelectAll }: {
   )
 }
 
-function GachaRow({ it, tier: t, checked, twins, onToggle }: {
-  it: AutoItem; tier: Tier; checked: boolean; twins: number; onToggle: () => void
+function GachaRow({ it, tier: t, checked, twins, onToggle, lockedFrom }: {
+  it: AutoItem; tier: Tier; checked: boolean; twins: number; onToggle: () => void; lockedFrom?: number
 }) {
   const rtp = rtpOf(t, 0.5)
   const left = it.remaining != null && it.quantity ? it.remaining / it.quantity : null
@@ -170,7 +192,7 @@ function GachaRow({ it, tier: t, checked, twins, onToggle }: {
   return (
     <li role="button" tabIndex={0} aria-pressed={checked} onClick={onToggle}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
-      className={`flex cursor-pointer gap-2.5 rounded-2xl border-2 p-2 transition outline-none focus-visible:ring-2 focus-visible:ring-coin ${checked
+      className={`flex cursor-pointer gap-2.5 rounded-2xl border-2 p-2 transition outline-none focus-visible:ring-2 focus-visible:ring-coin ${lockedFrom ? 'opacity-60 ' : ''}${checked
         ? 'border-coin bg-coin/10' : 'border-[var(--edge)] bg-[var(--surface)] hover:bg-[var(--surface-2)]'}`}>
       <div className="relative w-[104px] shrink-0">
         {img
@@ -183,7 +205,9 @@ function GachaRow({ it, tier: t, checked, twins, onToggle }: {
       <div className="flex min-w-0 flex-1 flex-col justify-between">
         <div className="flex items-start justify-between gap-1.5">
           <span className="truncate text-[13px] font-bold" title={it.name}>{nameOf(it)}</span>
-          <Badge tone={rtp >= 0.9 ? 'neutral' : 'lose'}>환원 {pct(rtp, 0)}</Badge>
+          {lockedFrom
+            ? <Badge>🔒 잔고 {fmt(lockedFrom)}부터</Badge>
+            : <Badge tone={rtp >= 0.9 ? 'neutral' : 'lose'}>환원 {pct(rtp, 0)}</Badge>}
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="num text-[16px] font-extrabold whitespace-nowrap">{fmt(t.cost)} <span className="text-[var(--ink-3)]">→</span> <span className="text-coin">{fmt(t.payout)}</span></span>
